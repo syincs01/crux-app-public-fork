@@ -707,7 +707,7 @@ msgid "{hours, plural, one {# hour} other {# hours}}"
 msgstr ""
 
 #. Badge indicating post count in a thread, e.g., the 3rd post of 5 total is '3/5'
-#: src/screens/PostThread/components/ThreadItemPostNumber.tsx:90
+#: src/screens/PostThread/components/ThreadItemPostNumber.tsx:129
 msgctxt "post-number-in-thread"
 msgid "{index}/{count}"
 msgstr "{index}/{count}"
@@ -2362,8 +2362,6 @@ msgstr ""
 msgid "bloomscrolling booksky"
 msgstr "bloomscrolling booksky"
 
-#: src/components/dialogs/ServerInput.tsx:144
-#: src/components/dialogs/ServerInput.tsx:146
 #: src/screens/CustomFeed/components/CustomFeedHeader.tsx:522
 msgid "Bluesky"
 msgstr ""
@@ -2383,15 +2381,6 @@ msgstr "Bluesky has taken action on your account or content for violating our co
 
 #: src/components/contacts/screens/GetContacts.tsx:237
 msgid "Bluesky helps friends find each other by creating an encoded digital fingerprint, called a \"hash\", and then looking for matching hashes."
-msgstr ""
-
-#: src/components/dialogs/ServerInput.tsx:214
-#: src/screens/Login/components/HostingProviderDialog.tsx:236
-msgid "Bluesky is an open network where you can choose your hosting provider. If you're a developer, you can host your own server."
-msgstr ""
-
-#: src/components/dialogs/ServerInput.tsx:162
-msgid "Bluesky is an open network where you can choose your own provider. If you're new here, we recommend sticking with the default Bluesky Social option."
 msgstr ""
 
 #: src/components/ProgressGuide/List.tsx:115
@@ -3822,6 +3811,20 @@ msgstr ""
 #: src/screens/List/ListHiddenScreen.tsx:130
 msgid "Creator has been blocked"
 msgstr ""
+
+#: src/components/dialogs/ServerInput.tsx:144
+#: src/components/dialogs/ServerInput.tsx:146
+msgid "Crux"
+msgstr "Crux"
+
+#: src/components/dialogs/ServerInput.tsx:214
+#: src/screens/Login/components/HostingProviderDialog.tsx:236
+msgid "Crux is an open network where you can choose your hosting provider. If you're a developer, you can host your own server."
+msgstr "Crux is an open network where you can choose your hosting provider. If you're a developer, you can host your own server."
+
+#: src/components/dialogs/ServerInput.tsx:162
+msgid "Crux is an open network where you can choose your own provider. If you're new here, we recommend sticking with the default Crux option."
+msgstr "Crux is an open network where you can choose your own provider. If you're new here, we recommend sticking with the default Crux option."
 
 #: src/lib/interests.ts:57
 msgid "Culture"
@@ -6444,8 +6447,8 @@ msgid "Hosting provider: {0}"
 msgstr "Hosting provider: {0}"
 
 #: src/screens/Login/LoginForm.tsx:663
-msgid "Hosting provider: Bluesky"
-msgstr "Hosting provider: Bluesky"
+msgid "Hosting provider: Crux"
+msgstr "Hosting provider: Crux"
 
 #: src/components/contacts/components/InviteInfo.tsx:54
 msgid "How it works:"
@@ -7243,7 +7246,7 @@ msgstr ""
 #. placeholder {0}: nameLink(names[0])
 #. placeholder {0}: names[0].displayName
 #: src/components/Post/KnownLikers.tsx:68
-#: src/components/Post/KnownLikers.tsx:105
+#: src/components/Post/KnownLikers.tsx:111
 msgid "Liked by {0}"
 msgstr "Liked by {0}"
 
@@ -7253,7 +7256,7 @@ msgstr "Liked by {0}"
 #. placeholder {1}: nameLink(names[1])
 #. placeholder {1}: names[1].displayName
 #: src/components/Post/KnownLikers.tsx:67
-#: src/components/Post/KnownLikers.tsx:101
+#: src/components/Post/KnownLikers.tsx:107
 msgid "Liked by {0} and {1}"
 msgstr "Liked by {0} and {1}"
 
@@ -8183,8 +8186,8 @@ msgid "New Starter Pack"
 msgstr "New Starter Pack"
 
 #: src/screens/Login/LoginForm.tsx:570
-msgid "New to Bluesky? <0>Sign up</0>"
-msgstr "New to Bluesky? <0>Sign up</0>"
+msgid "New to Crux? <0>Sign up</0>"
+msgstr "New to Crux? <0>Sign up</0>"
 
 #: src/components/NewskieDialog.tsx:123
 msgid "New user info dialog"
@@ -9556,7 +9559,7 @@ msgid "Post"
 msgstr ""
 
 #. Screen reader label indicating post count in a thread, e.g., the 3rd post of 5 total is 'Post 3 of 5'
-#: src/screens/PostThread/components/ThreadItemPostNumber.tsx:75
+#: src/screens/PostThread/components/ThreadItemPostNumber.tsx:114
 msgctxt "post-number-in-thread"
 msgid "Post {index} of {count}"
 msgstr "Post {index} of {count}"
@@ -11998,7 +12001,7 @@ msgid "Sorry, we're unable to load account suggestions at this time."
 msgstr ""
 
 #: src/App.tsx:138
-#: src/App.web.tsx:117
+#: src/App.web.tsx:134
 msgid "Sorry! Your session expired. Please sign in again."
 msgstr ""
 
@@ -15488,8 +15491,8 @@ msgid "Your full handle will be <0>@{0}</0>"
 msgstr ""
 
 #: src/screens/Login/components/HostingProviderDialog.tsx:182
-msgid "Your hosting provider can’t be detected from an email address, so the default Bluesky service will be used. Enter your username instead, or set your provider manually."
-msgstr "Your hosting provider can’t be detected from an email address, so the default Bluesky service will be used. Enter your username instead, or set your provider manually."
+msgid "Your hosting provider can’t be detected from an email address, so the default Crux service will be used. Enter your username instead, or set your provider manually."
+msgstr "Your hosting provider can’t be detected from an email address, so the default Crux service will be used. Enter your username instead, or set your provider manually."
 
 #: src/view/com/composer/state/video.ts:470
 msgid "Your hosting provider does not support videos this large. Please try again with a smaller file."

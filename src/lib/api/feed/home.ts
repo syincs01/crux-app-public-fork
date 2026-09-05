@@ -100,7 +100,10 @@ export class HomeFeedAPI implements FeedAPI {
       }
     }
 
-    if (this.usingDiscover && !__DEV__) {
+    // ponytail (crux spike): upstream skips the Discover fallback in dev builds; we want it.
+    //   Ceiling: none — this is the production behaviour.
+    //   Upgrade: drop the comment when the fork is built for production.
+    if (this.usingDiscover) {
       const res = await this.discover.fetch({cursor, limit})
       returnCursor = res.cursor
       posts = posts.concat(res.feed)

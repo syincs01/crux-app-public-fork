@@ -7,6 +7,7 @@ import {SafeAreaProvider} from 'react-native-safe-area-context'
 import {useLingui} from '@lingui/react/macro'
 import * as Sentry from '@sentry/react-native'
 
+import {LOCAL_DEV_SERVICE} from '#/lib/constants'
 import {Provider as HotkeysProvider} from '#/lib/hotkeys'
 import {QueryProvider} from '#/lib/react-query'
 import {ThemeProvider} from '#/lib/ThemeContext'
@@ -89,7 +90,7 @@ void prefetchAppConfig()
 function InnerApp() {
   const [isReady, setIsReady] = useState(false)
   const {currentAccount} = useSession()
-  const {resumeSession} = useSessionApi()
+  const {resumeSession, login} = useSessionApi()
   const theme = useColorModeTheme()
   const {t: l} = useLingui()
   const hasCheckedLanding = useLandingEntry()
@@ -109,8 +110,26 @@ function InnerApp() {
       setIsReady(true)
     }
     const account = readLastActiveAccount()
+    // ponytail (crux spike): `/?as=spike.test` signs that local account in on
+    // load, so a reader or a persona harness lands on the timeline from a URL.
+    //   Ceiling: any network that is not the local dev-env — the password is
+    //     the dev-env convention and the URL carries it.
+    //   Upgrade: delete this; a deployed instance signs in through the form.
+    const as = new URLSearchParams(window.location.search).get('as')
+    if (!account && as) {
+      const pw =
+        new URLSearchParams(window.location.search).get('pw') ??
+        'spike-pass-123'
+      void login(
+        {service: LOCAL_DEV_SERVICE, identifier: as, password: pw},
+        'LoginForm',
+      )
+        .catch(e => logger.warn('session: ?as= login failed', {message: e}))
+        .then(() => setIsReady(true))
+      return
+    }
     void onLaunch(account)
-  }, [resumeSession])
+  }, [resumeSession, login])
 
   useEffect(() => {
     return listenSessionDropped(() => {

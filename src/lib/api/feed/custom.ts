@@ -4,12 +4,13 @@ import {
   XrpcResponseError,
 } from '@atproto/lex'
 
-import {PUBLIC_APPVIEW} from '#/lib/constants'
+import {PUBLIC_APPVIEW, PUBLIC_APPVIEW_DID} from '#/lib/constants'
 import {createLexClient} from '#/lib/lexClient'
 import {
   getAppLanguageAsContentLanguage,
   getContentLanguages,
 } from '#/state/preferences/languages'
+import {BLUESKY_PROXY_DID} from '#/env'
 import {app} from '#/lexicons'
 import {type FeedAPI, type FeedAPIResponse} from './types'
 import {createBskyTopicsHeader, isBlueskyOwnedFeed} from './utils'
@@ -64,24 +65,33 @@ export class CustomFeedAPI implements FeedAPI {
      * limited). Only the logged-out branch can resolve without data, and it
      * signals that with a null body.
      */
-    const data = this.client.did
-      ? await this.client.call(
-          app.bsky.feed.getFeed,
-          {
-            ...this.params,
-            cursor,
-            limit,
-          },
-          {
-            headers: {
-              ...(isBlueskyOwned
-                ? createBskyTopicsHeader(this.userInterests)
-                : {}),
-              'Accept-Language': contentLangs,
+    // ponytail (crux spike): on the local dev network the AppView cannot
+    // hydrate posts it never indexed, so a Bluesky-owned feed (Discover) is
+    // read from the real network on the logged-out path even while signed in.
+    //   Ceiling: real posts are read-only here — a like or reply written to
+    //     the local PDS about a real post is seen by nobody but us.
+    //   Upgrade: a Crux feed generator on the local AppView replaces Discover.
+    const readFromRealNetwork =
+      isBlueskyOwned && BLUESKY_PROXY_DID !== PUBLIC_APPVIEW_DID
+    const data =
+      this.client.did && !readFromRealNetwork
+        ? await this.client.call(
+            app.bsky.feed.getFeed,
+            {
+              ...this.params,
+              cursor,
+              limit,
             },
-          },
-        )
-      : await loggedOutFetch({...this.params, cursor, limit})
+            {
+              headers: {
+                ...(isBlueskyOwned
+                  ? createBskyTopicsHeader(this.userInterests)
+                  : {}),
+                'Accept-Language': contentLangs,
+              },
+            },
+          )
+        : await loggedOutFetch({...this.params, cursor, limit})
 
     if (!data) {
       return {

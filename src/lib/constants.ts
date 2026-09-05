@@ -10,8 +10,11 @@ export const LOCAL_DEV_SERVICE =
 export const STAGING_SERVICE = 'https://staging.bsky.dev'
 export const BSKY_SERVICE = 'https://bsky.social'
 export const BSKY_SERVICE_DID = 'did:web:bsky.social'
-export const PUBLIC_BSKY_SERVICE = 'https://public.api.bsky.app'
-export const DEFAULT_SERVICE = BSKY_SERVICE
+// ponytail (crux spike): the copy talks only to the local dev network — no read ever reaches bsky.app.
+//   Ceiling: a deployed instance with its own domain.
+//   Upgrade: env vars for the three URLs, as EXPO_PUBLIC_BLUESKY_PROXY_DID already is.
+export const PUBLIC_BSKY_SERVICE = 'http://localhost:2584'
+export const DEFAULT_SERVICE = LOCAL_DEV_SERVICE
 const HELP_DESK_LANG = 'en-us'
 export const HELP_DESK_URL = `https://blueskyweb.zendesk.com/hc/${HELP_DESK_LANG}`
 export const CHAT_SERVICE = 'https://api.bsky.chat'
@@ -229,6 +232,9 @@ export const urls = {
   },
 }
 
+// ponytail (crux spike): Bluesky's own feeds (Discover) are read straight from the real network, unauthenticated, even when the session is local — see custom.ts.
+//   Ceiling: a private instance that must not touch bsky.app.
+//   Upgrade: point this at the local AppView and run a Crux feed generator instead.
 export const PUBLIC_APPVIEW = 'https://api.bsky.app'
 export const PUBLIC_APPVIEW_DID = 'did:web:api.bsky.app'
 export const PUBLIC_STAGING_APPVIEW_DID = 'did:web:api.staging.bsky.dev'

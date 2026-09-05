@@ -63,7 +63,7 @@ export function toNiceDomain(url: string): string {
   try {
     const urlp = new URL(url)
     if (`https://${urlp.host}` === BSKY_SERVICE) {
-      return 'Bluesky Social'
+      return 'Crux'
     }
     return urlp.host ? urlp.host : url
   } catch (e) {
@@ -105,7 +105,7 @@ export function toNiceHostingUrl(url: string): string {
   try {
     const urlp = new URL(url)
     if (urlp.host.endsWith(BSKY_HOSTING_ENDSWITH)) {
-      return 'Bluesky'
+      return 'Crux'
     }
     return urlp.host
   } catch {

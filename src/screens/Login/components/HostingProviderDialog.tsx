@@ -181,8 +181,8 @@ function DialogInner({
               {isEmail ? (
                 <Trans>
                   Your hosting provider can’t be detected from an email address,
-                  so the default Bluesky service will be used. Enter your
-                  username instead, or set your provider manually.
+                  so the default Crux service will be used. Enter your username
+                  instead, or set your provider manually.
                 </Trans>
               ) : (
                 <Trans>
@@ -234,7 +234,7 @@ function DialogInner({
             nativeID="dialog-description"
             style={[t.atoms.text_contrast_medium, a.text_sm, a.leading_snug]}>
             <Trans>
-              Bluesky is an open network where you can choose your hosting
+              Crux is an open network where you can choose your hosting
               provider. If you're a developer, you can host your own server.
             </Trans>{' '}
             <InlineLinkText

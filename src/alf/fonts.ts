@@ -43,6 +43,14 @@ export function applyFonts(
   style: MutableTextStyle,
   fontFamily: 'system' | 'theme',
 ) {
+  // ponytail (crux spike): every text style on web is Charter (Georgia fallback), whatever
+  // the theme/system font setting says (founder, 5 Sept 2026).
+  //   Ceiling: native builds still get Inter; only the web font is changed.
+  //   Upgrade: a bundled serif and a real font setting, if the fork ships.
+  if (IS_WEB) {
+    style.fontFamily = `Charter, Georgia, 'Iowan Old Style', serif`
+    return
+  }
   if (fontFamily === 'theme') {
     if (IS_ANDROID) {
       style.fontFamily =
