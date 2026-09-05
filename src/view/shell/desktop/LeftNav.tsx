@@ -41,6 +41,7 @@ import {
   Bell_Filled_Corner0_Rounded as BellFilledIcon,
   Bell_Stroke2_Corner0_Rounded as BellIcon,
 } from '#/components/icons/Bell'
+import {Book_Stroke2_Corner0_Rounded as BookIcon} from '#/components/icons/Book'
 import {
   Bookmark as BookmarkIcon,
   BookmarkFilled as BookmarkFilledIcon,
@@ -726,6 +727,16 @@ export function DesktopLeftNav({routeName}: {routeName: string}) {
             icons={{
               inactive: GlobeIcon,
               active: GlobeIcon,
+            }}
+          />
+          <NavItem
+            label={l`Knowledge`}
+            href="/knowledge"
+            navItem="knowledge"
+            minimal={leftNavMinimal}
+            icons={{
+              inactive: BookIcon,
+              active: BookIcon,
             }}
           />
           <NavItem

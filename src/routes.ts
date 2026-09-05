@@ -11,6 +11,8 @@ export const router = new Router<AllNavigatableRoutes>({
   Search: '/search',
   Feeds: '/feeds',
   Worldviews: '/worldviews',
+  Knowledge: '/knowledge',
+  KnowledgeSubject: '/knowledge/:name',
   Notifications: '/notifications',
   NotificationsActivityList: '/notifications/activity',
   LegacyNotificationSettings: '/notifications/settings',

@@ -73,6 +73,8 @@ import {TermsOfServiceScreen} from '#/view/screens/TermsOfService'
 import {BottomBar} from '#/view/shell/bottom-bar/BottomBar'
 import {createNativeStackNavigatorWithAuth} from '#/view/shell/createNativeStackNavigatorWithAuth'
 import {BookmarksScreen} from '#/screens/Bookmarks'
+import {KnowledgeScreen} from '#/screens/Crux/Knowledge'
+import {KnowledgeSubjectScreen} from '#/screens/Crux/KnowledgeSubject'
 import {WorldviewsScreen} from '#/screens/Crux/Worldviews'
 import {CustomFeedScreen} from '#/screens/CustomFeed'
 import {CustomFeedLikedByScreen} from '#/screens/CustomFeed/CustomFeedLikedBy'
@@ -573,6 +575,16 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         name="Worldviews"
         getComponent={() => WorldviewsScreen}
         options={{title: title(msg`Worldviews`), requireAuth: true}}
+      />
+      <Stack.Screen
+        name="Knowledge"
+        getComponent={() => KnowledgeScreen}
+        options={{title: title(msg`Knowledge`)}}
+      />
+      <Stack.Screen
+        name="KnowledgeSubject"
+        getComponent={() => KnowledgeSubjectScreen}
+        options={{title: title(msg`Knowledge`)}}
       />
       <Stack.Screen
         name="StarterPack"
