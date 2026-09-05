@@ -10,6 +10,7 @@ export const router = new Router<AllNavigatableRoutes>({
   Home: ['/', '/download'],
   Search: '/search',
   Feeds: '/feeds',
+  Worldviews: '/worldviews',
   Notifications: '/notifications',
   NotificationsActivityList: '/notifications/activity',
   LegacyNotificationSettings: '/notifications/settings',

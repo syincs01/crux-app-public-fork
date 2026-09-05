@@ -21,6 +21,7 @@ export type SearchParams = {
 
 export type CommonNavigatorParams = {
   NotFound: undefined
+  Worldviews: undefined
   Lists: undefined
   Moderation: undefined
   ModerationInbox: undefined

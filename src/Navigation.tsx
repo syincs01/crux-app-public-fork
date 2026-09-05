@@ -73,6 +73,7 @@ import {TermsOfServiceScreen} from '#/view/screens/TermsOfService'
 import {BottomBar} from '#/view/shell/bottom-bar/BottomBar'
 import {createNativeStackNavigatorWithAuth} from '#/view/shell/createNativeStackNavigatorWithAuth'
 import {BookmarksScreen} from '#/screens/Bookmarks'
+import {WorldviewsScreen} from '#/screens/Crux/Worldviews'
 import {CustomFeedScreen} from '#/screens/CustomFeed'
 import {CustomFeedLikedByScreen} from '#/screens/CustomFeed/CustomFeedLikedBy'
 import {SharedPreferencesTesterScreen} from '#/screens/E2E/SharedPreferencesTesterScreen'
@@ -567,6 +568,11 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         name="Feeds"
         getComponent={() => FeedsScreen}
         options={{title: title(msg`Feeds`)}}
+      />
+      <Stack.Screen
+        name="Worldviews"
+        getComponent={() => WorldviewsScreen}
+        options={{title: title(msg`Worldviews`), requireAuth: true}}
       />
       <Stack.Screen
         name="StarterPack"

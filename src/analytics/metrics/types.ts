@@ -99,6 +99,8 @@ export type Events = {
       | 'saved'
       | 'settings'
       | 'menu'
+      | 'worldviews'
+      | 'knowledge'
     surface: 'bottomBar' | 'drawer' | 'drawerHeader' | 'topBar' | 'leftNav'
   }
   'deepLink:referrerReceived': {

@@ -52,6 +52,7 @@ import {
 import {type Props as SVGIconProps} from '#/components/icons/common'
 import {DotGrid3x1_Stroke2_Corner0_Rounded as EllipsisIcon} from '#/components/icons/DotGrid'
 import {EditBig_Stroke2_Corner2_Rounded as EditBigIcon} from '#/components/icons/EditBig'
+import {Globe_Stroke2_Corner0_Rounded as GlobeIcon} from '#/components/icons/Globe'
 import {
   Hashtag_Filled_Corner0_Rounded as HashtagFilledIcon,
   Hashtag_Stroke2_Corner0_Rounded as HashtagIcon,
@@ -715,6 +716,16 @@ export function DesktopLeftNav({routeName}: {routeName: string}) {
             icons={{
               inactive: HashtagIcon,
               active: HashtagFilledIcon,
+            }}
+          />
+          <NavItem
+            label={l`Worldviews`}
+            href="/worldviews"
+            navItem="worldviews"
+            minimal={leftNavMinimal}
+            icons={{
+              inactive: GlobeIcon,
+              active: GlobeIcon,
             }}
           />
           <NavItem
