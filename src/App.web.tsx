@@ -112,11 +112,14 @@ function InnerApp() {
     const account = readLastActiveAccount()
     // ponytail (crux spike): `/?as=spike.test` signs that local account in on
     // load, so a reader or a persona harness lands on the timeline from a URL.
+    // It wins over a stored session: after a dev-env restart the stored account's
+    // DID no longer exists and resuming it 500s on the first notifications poll
+    // (found 6 September 2026 after a reboot).
     //   Ceiling: any network that is not the local dev-env — the password is
     //     the dev-env convention and the URL carries it.
     //   Upgrade: delete this; a deployed instance signs in through the form.
     const as = new URLSearchParams(window.location.search).get('as')
-    if (!account && as) {
+    if (as) {
       const pw =
         new URLSearchParams(window.location.search).get('pw') ??
         'spike-pass-123'
