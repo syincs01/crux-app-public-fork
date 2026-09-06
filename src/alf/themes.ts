@@ -3,11 +3,12 @@ import {createTheme, type Palette} from '@bsky.app/alf'
 /**
  * Spike palette — Countach orange on snow (founder's photo, 6 September 2026).
  *
- * Light: ground #F2F3F4 (snow), ink #1E1F21 (the slats), accent #E4602A (the car).
- * Night: ground #1A1B1D, ink #EDEEF0, the same accent.
+ * Light: ground #FFFFFF (the snow read as a tint over a whole page — founder, 6 Sept),
+ *   ink #1E1F21 (the slats), accent #E4602A (the car).
+ * Night: ground #000000 (same reason), ink #EDEEF0, the same accent.
  *
  * The accent is the one constant across both modes. As text on the light ground
- * it measures 3.3:1 (below AA's 4.5) and on the night ground 4.9:1; the founder
+ * it measures 3.4:1 (below AA's 4.5) and on the night ground 5.6:1; the founder
  * asked for the photo's colour, so it is pinned at primary_500 unchanged rather
  * than darkened to pass. Darken to #B84D23 if AA on light matters.
  *
@@ -28,20 +29,20 @@ const LIGHT: Palette = {
   pink: '#E4602A',
   like: '#E4602A',
 
-  contrast_0: '#F2F3F4',
-  contrast_25: '#EAEBEC',
-  contrast_50: '#E1E2E3',
-  contrast_100: '#D2D3D4',
-  contrast_200: '#BBBCBD',
-  contrast_300: '#A4A5A6',
-  contrast_400: '#8C8D8F',
-  contrast_500: '#77787A',
-  contrast_600: '#646567',
-  contrast_700: '#535456',
-  contrast_800: '#444547',
-  contrast_900: '#37383A',
-  contrast_950: '#2D2E30',
-  contrast_975: '#262729',
+  contrast_0: '#FFFFFF',
+  contrast_25: '#F6F6F6',
+  contrast_50: '#EDEDED',
+  contrast_100: '#DDDDDE',
+  contrast_200: '#C4C5C5',
+  contrast_300: '#ACACAD',
+  contrast_400: '#939394',
+  contrast_500: '#7C7D7E',
+  contrast_600: '#68696A',
+  contrast_700: '#565758',
+  contrast_800: '#464749',
+  contrast_900: '#393A3C',
+  contrast_950: '#2E2F31',
+  contrast_975: '#27282A',
   contrast_1000: '#1E1F21',
 
   primary_25: '#FDF2EE',
@@ -92,20 +93,20 @@ const DARK: Palette = {
   pink: '#E4602A',
   like: '#E4602A',
 
-  contrast_0: '#1A1B1D',
-  contrast_25: '#222325',
-  contrast_50: '#2B2C2E',
-  contrast_100: '#3A3B3D',
-  contrast_200: '#515254',
-  contrast_300: '#68696B',
-  contrast_400: '#7F8082',
-  contrast_500: '#949597',
-  contrast_600: '#A7A8AA',
-  contrast_700: '#B8B9BB',
-  contrast_800: '#C7C8CA',
-  contrast_900: '#D4D5D7',
-  contrast_950: '#DEDFE1',
-  contrast_975: '#E5E6E8',
+  contrast_0: '#000000',
+  contrast_25: '#090A0A',
+  contrast_50: '#131313',
+  contrast_100: '#242424',
+  contrast_200: '#3E3E3E',
+  contrast_300: '#585859',
+  contrast_400: '#727273',
+  contrast_500: '#898A8B',
+  contrast_600: '#9F9FA1',
+  contrast_700: '#B2B2B4',
+  contrast_800: '#C2C3C5',
+  contrast_900: '#D1D1D3',
+  contrast_950: '#DCDDDF',
+  contrast_975: '#E4E4E6',
   contrast_1000: '#EDEEF0',
 
   primary_25: '#120803',
@@ -160,7 +161,7 @@ const dark = createTheme({
 })
 // ponytail: dim is the dark palette verbatim — the spike names one night ground.
 //   Ceiling: a user who wants a third, softer night theme gets nothing new.
-//   Upgrade: a second night palette lifted a few steps off #1A1B1D, same shape.
+//   Upgrade: a second night palette lifted a few steps off #000000, same shape.
 const dim = createTheme({
   scheme: 'dark',
   name: 'dim',
