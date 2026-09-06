@@ -91,6 +91,8 @@ export type ThreadItem =
       id: string
       question: string
       people: number
+      participants: string[]
+      last: {speaker: string; text: string; at: string} | null
     }
   | {
       type: 'replyComposer'

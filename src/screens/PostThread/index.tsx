@@ -440,6 +440,8 @@ export function PostThread({uri}: {uri: string}) {
           members: string[]
           folded: string[]
           firstAt: string
+          participants: string[]
+          last: {speaker: string; text: string; at: string} | null
         }[]
       }>('/thread?uri=' + encodeURIComponent(anchorUri!)),
   })
@@ -467,6 +469,8 @@ export function PostThread({uri}: {uri: string}) {
           id: d.id,
           question: d.question,
           people: d.people,
+          participants: d.participants,
+          last: d.last,
         })
       }
     }
@@ -568,6 +572,8 @@ export function PostThread({uri}: {uri: string}) {
             id={item.id}
             question={item.question}
             people={item.people}
+            participants={item.participants}
+            last={item.last}
           />
         )
       } else if (item.type === 'readMore') {
