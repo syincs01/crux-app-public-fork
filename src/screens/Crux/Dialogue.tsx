@@ -407,8 +407,8 @@ function DialogueBubble({
   const squaredTop = !isFirst
   const bubbleColor = isFromSelf
     ? bubble.pending
-      ? t.palette.primary_300
-      : t.palette.primary_500
+      ? t.palette.primary_50
+      : t.palette.primary_100
     : t.palette.contrast_50
   const rt = new RichTextAPI({text: bubble.text})
   const displayName = profile ? createSanitizedDisplayName(profile) : null
@@ -489,7 +489,7 @@ function DialogueBubble({
               ]}>
               <RichText
                 value={rt}
-                style={[a.text_md, isFromSelf && {color: t.palette.white}]}
+                style={[a.text_md]}
                 interactiveStyle={a.underline}
                 enableTags
               />

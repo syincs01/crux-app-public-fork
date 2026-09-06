@@ -49,6 +49,7 @@
         margin: 0px;
         padding: 0px;
         font-family: 'Iowan Old Style', ui-serif, Georgia, serif;
+        background-color: var(--background);
         text-rendering: optimizeLegibility;
         /* Platform-specific reset */
         -webkit-overflow-scrolling: touch;
@@ -59,18 +60,11 @@
         font-synthesis-weight: none;
       }
       :root {
-        --text: black;
-        --background: white;
-        --backgroundLight: #e2e7ee;
+        --text: #1E1F21;
+        --background: #F2F3F4;
+        --backgroundLight: #E1E2E3;
       }
-      @media (prefers-color-scheme: dark) {
-        :root {
-          color-scheme: dark;
-          --text: white;
-          --background: black;
-          --backgroundLight: #232e3e;
-        }
-      }
+      /* No prefers-color-scheme override: light is the default, so the splash is light too. */
       html,
       body,
       #root {
@@ -192,7 +186,7 @@
     <!-- The root element for your Expo app. -->
     <div id="splash">
       <!-- Crux SVG -->
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 57"><text x="32" y="48" text-anchor="middle" font-size="76" fill="#006AFF" font-family="Apple Symbols, Segoe UI Symbol, Noto Sans Symbols2, DejaVu Sans, sans-serif">♃</text></svg>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 57"><text x="32" y="48" text-anchor="middle" font-size="76" fill="#E4602A" font-family="Apple Symbols, Segoe UI Symbol, Noto Sans Symbols2, DejaVu Sans, sans-serif">♃</text></svg>
     </div>
     <div id="root">
     </div>

@@ -86,7 +86,7 @@ export function Splash({
             viewBox="0 0 64 57"
             style={[a.relative, {width: size, height: size * ratio, top: -50}]}>
             <SvgText
-              fill="#006AFF"
+              fill="#E4602A"
               x="32"
               y="48"
               textAnchor="middle"

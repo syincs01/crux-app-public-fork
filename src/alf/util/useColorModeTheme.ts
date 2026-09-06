@@ -24,12 +24,16 @@ export function useThemeName(): ThemeName {
 }
 
 function getThemeName(
-  colorScheme: ColorSchemeName | null | undefined,
+  _colorScheme: ColorSchemeName | null | undefined,
   colorMode: 'system' | 'light' | 'dark',
   darkTheme?: ThemeName,
 ) {
   if (
-    (colorMode === 'system' && colorScheme === 'light') ||
+    // ponytail (crux spike): 'system' reads as light — white is the default
+    // (founder, 6 September 2026) and every existing browser has 'system' stored.
+    //   Ceiling: a person who wants the app to follow the OS gets light until they pick dark.
+    //   Upgrade: a one-time migration of stored 'system' to 'light', then follow the OS again.
+    colorMode === 'system' ||
     colorMode === 'light'
   ) {
     return 'light'

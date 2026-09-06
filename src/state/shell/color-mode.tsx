@@ -12,7 +12,7 @@ type SetContext = {
 }
 
 const stateContext = createContext<StateContext>({
-  colorMode: 'system',
+  colorMode: 'light',
   darkTheme: 'dark',
 })
 stateContext.displayName = 'ColorModeStateContext'
