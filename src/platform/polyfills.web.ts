@@ -32,3 +32,30 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 export {}
+
+// ponytail (crux spike): the dev-env names every service as localhost — the
+// PDS in each DID document (:2583), the AppView (:2584), the bridge (:8788) —
+// and a browser on any other machine cannot reach those. When the page is
+// served from somewhere else (a LAN address, a tunnel), every such URL is
+// rewritten to the page's own origin, where the dev server proxies /xrpc and
+// /bridge (webpack.config.js). One translation point, inert on localhost.
+//   Ceiling: only fetch — an <img> the AppView names absolute stays broken;
+//     a WebSocket would too.
+//   Upgrade: dev-env DID documents and image URLs that name the public origin.
+if (
+  typeof window !== 'undefined' &&
+  !/^(localhost|127\.0\.0\.1)$/.test(window.location.hostname)
+) {
+  const origin = window.location.origin
+  const rewrite = (u: string) =>
+    u
+      .replace(/^http:\/\/localhost:258[34]\//, `${origin}/`)
+      .replace(/^http:\/\/localhost:8788\//, `${origin}/bridge/`)
+  const realFetch = window.fetch.bind(window)
+  window.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
+    if (typeof input === 'string') return realFetch(rewrite(input), init)
+    if (input instanceof URL) return realFetch(rewrite(input.href), init)
+    const url = rewrite(input.url)
+    return realFetch(url === input.url ? input : new Request(url, input), init)
+  }
+}

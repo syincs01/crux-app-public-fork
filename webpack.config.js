@@ -127,6 +127,43 @@ module.exports = async function (env, argv) {
   ]
   if (env.mode === 'development') {
     config.plugins.push(new ReactRefreshWebpackPlugin())
+    // crux spike: the dev server is the one public origin. /xrpc goes to the
+    // PDS (which pipes AppView reads through) and /bridge to the Crux bridge,
+    // so a single tunnel to :19006 serves a friend over the internet. Admin
+    // and invite endpoints never cross the proxy; scripts use :2583 directly.
+    config.devServer.allowedHosts = 'all'
+    config.devServer.proxy = {
+      '/xrpc': {
+        target: 'http://localhost:2583',
+        changeOrigin: true,
+        // A signed-out app.bsky.* read goes straight to the AppView: the PDS
+        // only pipes reads through for a session (it answers 401 otherwise).
+        router: req =>
+          !req.headers.authorization && /\/xrpc\/app\.bsky\./.test(req.url)
+            ? 'http://localhost:2584'
+            : 'http://localhost:2583',
+      },
+      '/bridge': {
+        target: 'http://localhost:8788',
+        changeOrigin: true,
+        pathRewrite: {'^/bridge': ''},
+      },
+    }
+    const setupMiddlewares = config.devServer.setupMiddlewares
+    config.devServer.setupMiddlewares = (middlewares, devServer) => {
+      middlewares.unshift({
+        name: 'crux-no-admin-through-the-proxy',
+        middleware: (req, res, next) =>
+          /\/xrpc\/com\.atproto\.(admin\.|server\.createInviteCode)/.test(
+            req.url,
+          )
+            ? res.status(403).end('not through the proxy')
+            : next(),
+      })
+      return setupMiddlewares
+        ? setupMiddlewares(middlewares, devServer)
+        : middlewares
+    }
     // Reap zombie HMR WebSocket connections that linger after refresh.
     // Without this, dead sockets exhaust the browser's per-origin connection
     // pool and the dev server stops responding.
