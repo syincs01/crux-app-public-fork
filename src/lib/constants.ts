@@ -176,10 +176,25 @@ export const VIDEO_SAVED_FEED = {
   pinned: true,
 }
 
+/**
+ * Crux (A7 ruling 5): Home is four feeds served by the bridge — Now, Following,
+ * With you, Against you — pinned in that order, read from
+ * `EXPO_PUBLIC_CRUX_FEEDS` (comma-separated generator URIs, written by
+ * scripts/mint-feedgen.mjs to feedgen.json). Following is ours, so the
+ * platform's timeline stays out; without the env the platform's defaults stand.
+ */
+const CRUX_FEED_URIS = (
+  (process.env.EXPO_PUBLIC_CRUX_FEEDS as string | undefined) ?? ''
+)
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean)
 export const RECOMMENDED_SAVED_FEEDS: Pick<
   app.bsky.actor.defs.SavedFeed,
   'type' | 'value' | 'pinned'
->[] = [DISCOVER_SAVED_FEED, TIMELINE_SAVED_FEED]
+>[] = CRUX_FEED_URIS.length
+  ? CRUX_FEED_URIS.map(value => ({type: 'feed', value, pinned: true}))
+  : [DISCOVER_SAVED_FEED, TIMELINE_SAVED_FEED]
 
 export const KNOWN_SHUTDOWN_FEEDS = [
   'at://did:plc:wqowuobffl66jv3kpsvo7ak4/app.bsky.feed.generator/the-algorithm', // for you by skygaze

@@ -3,7 +3,7 @@ import {StyleSheet, View} from 'react-native'
 import {Trans, useLingui} from '@lingui/react/macro'
 import {useNavigation} from '@react-navigation/native'
 
-import {DISCOVER_FEED_URI} from '#/lib/constants'
+import {DISCOVER_FEED_URI, RECOMMENDED_SAVED_FEEDS} from '#/lib/constants'
 import {usePalette} from '#/lib/hooks/usePalette'
 import {MagnifyingGlassIcon} from '#/lib/icons'
 import {type NavigationProp} from '#/lib/routes/types'
@@ -42,6 +42,15 @@ export function CustomFeedEmptyState() {
   const pal = usePalette('default')
   const navigation = useNavigation<NavigationProp>()
 
+  // Crux (A7 ruling 5): one of the four feeds, empty, reads its own sentence —
+  // what it would show and why there is nothing yet — never the platform's
+  // "follow more users", which names a count as the cure.
+  const info = feedFeedback.feedSourceInfo
+  const cruxSentence =
+    info && RECOMMENDED_SAVED_FEEDS.some(f => f.value === info.uri)
+      ? info.description?.text
+      : undefined
+
   const onPressFindAccounts = useCallback(() => {
     if (IS_WEB) {
       navigation.navigate('Search', {})
@@ -50,6 +59,19 @@ export function CustomFeedEmptyState() {
       navigation.popToTop()
     }
   }, [navigation])
+
+  if (cruxSentence) {
+    return (
+      <View style={styles.emptyContainer} testID="cruxFeedEmpty">
+        <Text type="xl-medium" style={[s.textCenter, pal.text]}>
+          {cruxSentence}
+        </Text>
+        <Text type="md" style={[s.textCenter, pal.textLight, a.mt_md]}>
+          <Trans>Nothing here yet.</Trans>
+        </Text>
+      </View>
+    )
+  }
 
   return (
     <View style={styles.emptyContainer}>
