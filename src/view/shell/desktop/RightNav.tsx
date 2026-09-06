@@ -8,6 +8,7 @@ import {useNavigation} from '@react-navigation/native'
 import {FEEDBACK_FORM_URL, HELP_DESK_URL} from '#/lib/constants'
 import {useSession} from '#/state/session'
 import {useLogoVariant} from '#/view/icons/useLogoVariant'
+import {CruxDialogueKnowledge} from '#/view/shell/desktop/CruxDialogueKnowledge'
 import {DesktopFeeds} from '#/view/shell/desktop/Feeds'
 import {DesktopSearch} from '#/view/shell/desktop/Search'
 import {SidebarTrendingTopics} from '#/view/shell/desktop/SidebarTrendingTopics'
@@ -86,6 +87,8 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
         }),
       ]}>
       {!isSearchScreen && <DesktopSearch />}
+
+      {routeName === 'Dialogue' && <CruxDialogueKnowledge />}
 
       {hasSession && (
         <>

@@ -9,7 +9,9 @@ import {
 import {useWindowDimensions, View} from 'react-native'
 import Animated, {useAnimatedStyle} from 'react-native-reanimated'
 import {Trans} from '@lingui/react/macro'
+import {useQuery} from '@tanstack/react-query'
 
+import {cruxGet} from '#/lib/crux'
 import {useInitialNumToRender} from '#/lib/hooks/useInitialNumToRender'
 import {useNonReactiveCallback} from '#/lib/hooks/useNonReactiveCallback'
 import {useOpenComposer} from '#/lib/hooks/useOpenComposer'
@@ -38,6 +40,7 @@ import {
   ThreadItemAnchorSkeleton,
 } from '#/screens/PostThread/components/ThreadItemAnchor'
 import {ThreadItemAnchorNoUnauthenticated} from '#/screens/PostThread/components/ThreadItemAnchorNoUnauthenticated'
+import {ThreadItemDialogue} from '#/screens/PostThread/components/ThreadItemDialogue'
 import {
   ThreadItemPost,
   ThreadItemPostSkeleton,
@@ -414,12 +417,68 @@ export function PostThread({uri}: {uri: string}) {
     }
   }, [thread.state.isPlaceholderData, showReplySkeletons])
 
+  /*
+   * Crux (A8 ruling 8, D10): the thread shows its points. The bridge says which
+   * replies belong to which dialogue; those are dropped and one line stands
+   * where the earliest of them was. Until the bridge answers, the platform
+   * thread renders unchanged — the fold is progressive, nothing blanks.
+   */
+  const anchorUri = useMemo(() => {
+    const anchor = slices.find(i => 'depth' in i && i.depth === 0 && 'uri' in i)
+    return anchor && 'uri' in anchor ? anchor.uri : undefined
+  }, [slices])
+  const cruxThread = useQuery({
+    queryKey: ['crux-thread', anchorUri],
+    enabled: !!anchorUri,
+    staleTime: 15_000,
+    queryFn: () =>
+      cruxGet<{
+        dialogues: {
+          id: string
+          question: string
+          people: number
+          members: string[]
+          folded: string[]
+          firstAt: string
+        }[]
+      }>('/thread?uri=' + encodeURIComponent(anchorUri!)),
+  })
+  const foldedSlices = useMemo(() => {
+    const dialogues = cruxThread.data?.dialogues ?? []
+    if (!dialogues.length) return slices
+    const hidden = new Map<string, (typeof dialogues)[number]>()
+    for (const d of dialogues) {
+      for (const uri of [...d.members, ...d.folded]) hidden.set(uri, d)
+    }
+    const placed = new Set<string>()
+    const out: ThreadItem[] = []
+    for (const item of slices) {
+      const uri = 'uri' in item ? item.uri : undefined
+      const d = uri ? hidden.get(uri) : undefined
+      if (!d || ('depth' in item && item.depth <= 0)) {
+        out.push(item)
+        continue
+      }
+      if (!placed.has(d.id)) {
+        placed.add(d.id)
+        out.push({
+          type: 'cruxDialogue',
+          key: `cruxDialogue:${d.id}`,
+          id: d.id,
+          question: d.question,
+          people: d.people,
+        })
+      }
+    }
+    return out
+  }, [slices, cruxThread.data])
+
   const deferredSlices = useMemo(() => {
-    if (showReplySkeletons) return slices
-    return slices.filter(
+    if (showReplySkeletons) return foldedSlices
+    return foldedSlices.filter(
       item => !(item.type === 'skeleton' && item.item === 'reply'),
     )
-  }, [slices, showReplySkeletons])
+  }, [foldedSlices, showReplySkeletons])
 
   const isTombstoneView = useMemo(() => {
     if (deferredSlices.length > 1) return false
@@ -503,6 +562,14 @@ export function PostThread({uri}: {uri: string}) {
         } else if (item.depth === 0) {
           return <ThreadItemAnchorNoUnauthenticated />
         }
+      } else if (item.type === 'cruxDialogue') {
+        return (
+          <ThreadItemDialogue
+            id={item.id}
+            question={item.question}
+            people={item.people}
+          />
+        )
       } else if (item.type === 'readMore') {
         return (
           <ThreadItemReadMore

@@ -82,6 +82,17 @@ export type ThreadItem =
       value: app.bsky.unspecced.defs.ThreadItemBlocked
     }
   | {
+      /*
+       * Crux (A8 ruling 8): one line standing for a folded dialogue, at the
+       * position of its earliest reply.
+       */
+      type: 'cruxDialogue'
+      key: string
+      id: string
+      question: string
+      people: number
+    }
+  | {
       type: 'replyComposer'
       key: string
     }

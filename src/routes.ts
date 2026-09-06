@@ -13,6 +13,7 @@ export const router = new Router<AllNavigatableRoutes>({
   Worldviews: '/worldviews',
   Knowledge: '/knowledge',
   KnowledgeSubject: '/knowledge/:name',
+  Dialogue: '/dialogue/:id',
   Notifications: '/notifications',
   NotificationsActivityList: '/notifications/activity',
   LegacyNotificationSettings: '/notifications/settings',

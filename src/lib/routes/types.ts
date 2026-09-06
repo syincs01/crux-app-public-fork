@@ -24,6 +24,7 @@ export type CommonNavigatorParams = {
   Worldviews: undefined
   Knowledge: undefined
   KnowledgeSubject: {name: string}
+  Dialogue: {id: string}
   Lists: undefined
   Moderation: undefined
   ModerationInbox: undefined

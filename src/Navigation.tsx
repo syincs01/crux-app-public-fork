@@ -73,6 +73,7 @@ import {TermsOfServiceScreen} from '#/view/screens/TermsOfService'
 import {BottomBar} from '#/view/shell/bottom-bar/BottomBar'
 import {createNativeStackNavigatorWithAuth} from '#/view/shell/createNativeStackNavigatorWithAuth'
 import {BookmarksScreen} from '#/screens/Bookmarks'
+import {DialogueScreen} from '#/screens/Crux/Dialogue'
 import {KnowledgeScreen} from '#/screens/Crux/Knowledge'
 import {KnowledgeSubjectScreen} from '#/screens/Crux/KnowledgeSubject'
 import {WorldviewsScreen} from '#/screens/Crux/Worldviews'
@@ -585,6 +586,11 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         name="KnowledgeSubject"
         getComponent={() => KnowledgeSubjectScreen}
         options={{title: title(msg`Knowledge`)}}
+      />
+      <Stack.Screen
+        name="Dialogue"
+        getComponent={() => DialogueScreen}
+        options={{title: title(msg`Dialogue`)}}
       />
       <Stack.Screen
         name="StarterPack"
