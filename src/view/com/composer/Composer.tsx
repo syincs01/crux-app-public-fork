@@ -64,6 +64,7 @@ import {
   type SupportedMimeTypes,
   VIDEO_MAX_DURATION_MS,
 } from '#/lib/constants'
+import {cruxGet} from '#/lib/crux'
 import {useNonReactiveCallback} from '#/lib/hooks/useNonReactiveCallback'
 import {createVideoTelemetry} from '#/lib/media/video/telemetry'
 import {mimeToExt} from '#/lib/media/video/util'
@@ -87,6 +88,7 @@ import {
   useLanguagePrefs,
   useLanguagePrefsApi,
 } from '#/state/preferences/languages'
+import {useAgreeMutation} from '#/state/queries/crux-agree'
 import {usePreferencesQuery} from '#/state/queries/preferences'
 import {useProfileQuery} from '#/state/queries/profile'
 import {resolveLinkQueryOptions} from '#/state/queries/resolve-link'
@@ -288,6 +290,20 @@ export const ComposePost = ({
   const discardPromptControl = Prompt.usePromptControl()
   const emptyPostsPromptControl = Prompt.usePromptControl()
   const skipEmptyConfirmedRef = useRef(false)
+  // A8 ruling 3 / D5: before a fresh post, the record is asked for the nearest
+  // claim already said; a person decides whether it is the same thing, and
+  // agreeing is offered instead of a restatement. Asked once per draft, never
+  // a merge. Measured 6 Sept 2026: a contrary scores as high as a paraphrase,
+  // so the prompt ASKS, it never tells the person someone said this.
+  const nearPromptControl = Prompt.usePromptControl()
+  const [near, setNear] = useState<{
+    uri: string
+    cid: string
+    text: string
+    speaker: string
+  } | null>(null)
+  const nearAskedRef = useRef(false)
+  const agreeMutation = useAgreeMutation()
   const {mutateAsync: saveDraft, isPending: _isSavingDraft} =
     useSaveDraftMutation()
   const {mutate: cleanupPublishedDraft} = useCleanupPublishedDraftMutation()
@@ -1038,6 +1054,22 @@ export const ComposePost = ({
       return
     }
 
+    if (!replyTo && !first?.embed.quote && !nearAskedRef.current && first) {
+      nearAskedRef.current = true
+      try {
+        const found = await cruxGet<{
+          near: {uri: string; cid: string; text: string; speaker: string} | null
+        }>('/near?text=' + encodeURIComponent(first.richtext.text))
+        if (found.near) {
+          setNear(found.near)
+          nearPromptControl.open()
+          return
+        }
+      } catch {
+        // The record is not answering: the post goes out as on any platform.
+      }
+    }
+
     const {type: emptyType, filteredThread} = getFilteredThread()
 
     if (emptyType === 'non-trailing' && !skipEmptyConfirmedRef.current) {
@@ -1290,6 +1322,7 @@ export const ComposePost = ({
     getFilteredThread,
     linkQueries,
     thread.posts,
+    nearPromptControl,
   ])
 
   const handleConfirmSkipEmpty = () => {
@@ -1573,6 +1606,36 @@ export const ComposePost = ({
             </Prompt.Actions>
           </Prompt.Outer>
         )}
+
+        <Prompt.Outer control={nearPromptControl} testID="cruxNearPrompt">
+          <Prompt.Content>
+            <Prompt.TitleText>
+              <Trans>Is this what you mean?</Trans>
+            </Prompt.TitleText>
+            <Prompt.DescriptionText>
+              {near ? `@${near.speaker}: ${near.text}` : ''}
+            </Prompt.DescriptionText>
+          </Prompt.Content>
+          <Prompt.Actions>
+            <Prompt.Action
+              testID="cruxNearAgree"
+              cta={l`Agree with this instead`}
+              color="primary"
+              onPress={() => {
+                if (!near) return
+                void agreeMutation
+                  .mutateAsync({uri: near.uri, cid: near.cid})
+                  .then(() => onClose())
+              }}
+            />
+            <Prompt.Action
+              testID="cruxNearPostAnyway"
+              cta={l`Post anyway`}
+              color="secondary"
+              onPress={() => void onPressPublish()}
+            />
+          </Prompt.Actions>
+        </Prompt.Outer>
 
         <Prompt.Basic
           control={emptyPostsPromptControl}
