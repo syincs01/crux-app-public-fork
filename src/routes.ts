@@ -14,6 +14,8 @@ export const router = new Router<AllNavigatableRoutes>({
   Knowledge: '/knowledge',
   KnowledgeSubject: '/knowledge/:name',
   Dialogue: '/dialogue/:id',
+  Games: '/games',
+  Game: '/game/:uri',
   Notifications: '/notifications',
   NotificationsActivityList: '/notifications/activity',
   LegacyNotificationSettings: '/notifications/settings',

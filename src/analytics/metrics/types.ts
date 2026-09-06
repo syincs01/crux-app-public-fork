@@ -101,6 +101,7 @@ export type Events = {
       | 'menu'
       | 'worldviews'
       | 'knowledge'
+      | 'games'
     surface: 'bottomBar' | 'drawer' | 'drawerHeader' | 'topBar' | 'leftNav'
   }
   'deepLink:referrerReceived': {

@@ -8,7 +8,7 @@ import {Trans} from '@lingui/react/macro'
 import {type NativeStackScreenProps} from '@react-navigation/native-stack'
 import {useQuery, useQueryClient} from '@tanstack/react-query'
 
-import {cruxGet} from '#/lib/crux'
+import {cruxGet, type Room} from '#/lib/crux'
 import {createSanitizedDisplayName} from '#/lib/moderation/create-sanitized-display-name'
 import {type CommonNavigatorParams} from '#/lib/routes/types'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
@@ -35,22 +35,7 @@ import {Text} from '#/components/Typography'
 import {com} from '#/lexicons'
 import type * as bsky from '#/types/bsky'
 
-export type Room = {
-  id: string
-  question: string
-  root: {uri: string; did: string; speaker: string; text: string}
-  messages: {
-    uri: string
-    did: string
-    speaker: string
-    text: string
-    at: string
-    move: string | null
-    restsOn: {id: string; heading: string | null; url: string}[]
-  }[]
-  folded: {uri: string; did: string; speaker: string; text: string}[]
-  lastUri: string
-}
+export type {Room}
 
 export function useRoom(id: string) {
   return useQuery({

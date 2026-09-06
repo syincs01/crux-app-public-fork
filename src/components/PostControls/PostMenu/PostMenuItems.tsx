@@ -52,6 +52,7 @@ import {
 } from '#/state/queries/threadgate'
 import {useRequireAuth, useSession} from '#/state/session'
 import {useMergedThreadgateHiddenReplies} from '#/state/threadgate-hidden-replies'
+import {GameInviteDialog} from '#/components/crux/GameInviteDialog'
 import {useDialogControl} from '#/components/Dialog'
 import {useGlobalDialogsControlContext} from '#/components/dialogs/Context'
 import {
@@ -68,6 +69,7 @@ import {
 import {Eye_Stroke2_Corner0_Rounded as Eye} from '#/components/icons/Eye'
 import {EyeSlash_Stroke2_Corner0_Rounded as EyeSlash} from '#/components/icons/EyeSlash'
 import {Filter_Stroke2_Corner0_Rounded as Filter} from '#/components/icons/Filter'
+import {GameController_Stroke2_Corner0_Rounded as GameControllerIcon} from '#/components/icons/GameController'
 import {
   Mute_Stroke2_Corner0_Rounded as Mute,
   Mute_Stroke2_Corner0_Rounded as MuteIcon,
@@ -145,6 +147,7 @@ let PostMenuItems = ({
   const postInteractionSettingsDialogControl = useDialogControl()
   const quotePostDetachConfirmControl = useDialogControl()
   const hideReplyConfirmControl = useDialogControl()
+  const gameInviteControl = useDialogControl()
   const {mutateAsync: toggleReplyVisibility} =
     useToggleReplyVisibilityMutation()
 
@@ -573,6 +576,16 @@ let PostMenuItems = ({
                 <Menu.ItemText>{l`Copy post text`}</Menu.ItemText>
                 <Menu.ItemIcon icon={ClipboardIcon} position="right" />
               </Menu.Item>
+
+              {hasSession && !isAuthor && (
+                <Menu.Item
+                  testID="postDropdownInviteToGameBtn"
+                  label={l`Invite to a game`}
+                  onPress={() => gameInviteControl.open()}>
+                  <Menu.ItemText>{l`Invite to a game`}</Menu.ItemText>
+                  <Menu.ItemIcon icon={GameControllerIcon} position="right" />
+                </Menu.Item>
+              )}
             </>
           ) : (
             <Menu.Item
@@ -868,6 +881,18 @@ let PostMenuItems = ({
         profile={postAuthor}
         onBlock={onBlockAuthor}
       />
+      {/* The invitation to a game (the game page §1); never on your own post. */}
+      {hasSession && !isAuthor && (
+        <GameInviteDialog
+          control={gameInviteControl}
+          post={{
+            uri: postUri,
+            cid: postCid,
+            authorDid: postAuthor.did,
+            text: record.text,
+          }}
+        />
+      )}
     </>
   )
 }

@@ -74,6 +74,8 @@ import {BottomBar} from '#/view/shell/bottom-bar/BottomBar'
 import {createNativeStackNavigatorWithAuth} from '#/view/shell/createNativeStackNavigatorWithAuth'
 import {BookmarksScreen} from '#/screens/Bookmarks'
 import {DialogueScreen} from '#/screens/Crux/Dialogue'
+import {GameScreen} from '#/screens/Crux/Game'
+import {GamesScreen} from '#/screens/Crux/Games'
 import {KnowledgeScreen} from '#/screens/Crux/Knowledge'
 import {KnowledgeSubjectScreen} from '#/screens/Crux/KnowledgeSubject'
 import {WorldviewsScreen} from '#/screens/Crux/Worldviews'
@@ -591,6 +593,16 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         name="Dialogue"
         getComponent={() => DialogueScreen}
         options={{title: title(msg`Dialogue`)}}
+      />
+      <Stack.Screen
+        name="Games"
+        getComponent={() => GamesScreen}
+        options={{title: title(msg`Games`), requireAuth: true}}
+      />
+      <Stack.Screen
+        name="Game"
+        getComponent={() => GameScreen}
+        options={{title: title(msg`Game`)}}
       />
       <Stack.Screen
         name="StarterPack"

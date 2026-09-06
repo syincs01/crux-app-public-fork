@@ -25,6 +25,8 @@ export type CommonNavigatorParams = {
   Knowledge: undefined
   KnowledgeSubject: {name: string}
   Dialogue: {id: string}
+  Games: undefined
+  Game: {uri: string}
   Lists: undefined
   Moderation: undefined
   ModerationInbox: undefined

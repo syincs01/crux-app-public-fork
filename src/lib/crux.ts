@@ -4,6 +4,8 @@
  * 5 September 2026, D1). Every call here is a READ. A person's writes travel
  * as records in their own repo (D3) and reach Crux through the firehose.
  */
+import {useQuery} from '@tanstack/react-query'
+
 export const CRUX_BRIDGE =
   process.env.EXPO_PUBLIC_CRUX_BRIDGE ?? 'http://localhost:8788'
 
@@ -34,4 +36,123 @@ export type WorldviewView = {
 export type Statements = {
   axes: Record<keyof Axes, [string, string]>
   statements: {i: number; text: string}[]
+}
+
+/** The game (foundations §11): an invitation and the moves, records in the person's own repo (D3). */
+export const INVITE_COLLECTION = 'app.crux.game.invite'
+export const GAME_MOVE_COLLECTION = 'app.crux.game.move'
+
+export type StakeKind = 'contrary' | 'condition' | 'question'
+export type GameMoveKind =
+  'pass' | 'offer' | 'accept' | 'leave' | 'away' | 'continue'
+
+export type Room = {
+  id: string
+  question: string
+  root: {uri: string; did: string; speaker: string; text: string}
+  messages: {
+    uri: string
+    did: string
+    speaker: string
+    text: string
+    at: string
+    move: string | null
+    restsOn: {id: string; heading: string | null; url: string}[]
+  }[]
+  folded: {uri: string; did: string; speaker: string; text: string}[]
+  lastUri: string
+}
+
+export type GameClaim = {
+  id: string
+  text: string
+  by: string
+  postUri: string
+  standing: string
+  word: string
+  tone: 'holds' | 'fallen' | 'open' | 'quiet'
+  holders: string[]
+}
+export type Owed = {
+  by: string
+  claimId: string
+  claim: string
+  what: string
+  since: string
+  defaulted: boolean
+}
+export type Ending =
+  | {kind: 'open'}
+  | {kind: 'offered'; by: string; at: string}
+  | {kind: 'agreed'; blockId: string; at: string}
+  | {kind: 'parted'; at: string}
+  | {kind: 'unfinished'; by: string; at: string}
+
+export type GameView = Room & {
+  game: {
+    players: {
+      defender: {
+        did: string
+        handle: string
+        stake: {kind: StakeKind; text: string} | null
+      }
+      challenger: {
+        did: string
+        handle: string
+        stake: {kind: StakeKind; text: string} | null
+      }
+    }
+    claim: string
+    clockDays: number
+    publicNotice: string
+    owed: Owed[]
+    toMove: string | null
+    stores: Record<string, {asserted: GameClaim[]; letStand: GameClaim[]}>
+    block: GameClaim[]
+    canHold: GameClaim[]
+    previews: {claimId: string; falls: {id: string; text: string}[]}[]
+    ending: Ending
+    offerLocked: boolean
+  }
+}
+
+export type Games = {
+  invites: {
+    uri: string
+    from: string
+    subject: {uri: string; text: string}
+    stake: {kind: StakeKind; text: string}
+    clockDays: number
+    at: string
+  }[]
+  games: {
+    root: string
+    question: string
+    with: string
+    ending: Ending
+    url: string
+  }[]
+}
+
+export function useGame(uri: string, viewer: string | undefined) {
+  return useQuery({
+    queryKey: ['crux-game', uri, viewer ?? ''],
+    queryFn: () =>
+      cruxGet<GameView>(
+        `/game?uri=${encodeURIComponent(uri)}&viewer=${encodeURIComponent(viewer ?? '')}`,
+      ),
+    // ponytail: the game polls the bridge while open, as the room does.
+    //   Ceiling: a move made while the tab is backgrounded waits 4 s to show.
+    //   Upgrade: the bridge relays the firehose (a server-sent stream per game).
+    refetchInterval: 4000,
+  })
+}
+
+export function useGames(handle: string | undefined) {
+  return useQuery({
+    queryKey: ['crux-games', handle ?? ''],
+    enabled: !!handle,
+    queryFn: () =>
+      cruxGet<Games>(`/games?handle=${encodeURIComponent(handle!)}`),
+  })
 }
