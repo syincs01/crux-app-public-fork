@@ -43,12 +43,12 @@ export function applyFonts(
   style: MutableTextStyle,
   fontFamily: 'system' | 'theme',
 ) {
-  // ponytail (crux spike): every text style on web is Charter (Georgia fallback), whatever
+  // ponytail (crux spike): every text style on web is Iowan Old Style (soft, low-contrast, large x-height; Charter read as Times and Georgia as too hard at small sizes, founder 6 Sept 2026), whatever
   // the theme/system font setting says (founder, 5 Sept 2026).
   //   Ceiling: native builds still get Inter; only the web font is changed.
   //   Upgrade: a bundled serif and a real font setting, if the fork ships.
   if (IS_WEB) {
-    style.fontFamily = `Charter, Georgia, 'Iowan Old Style', serif`
+    style.fontFamily = `'Iowan Old Style', ui-serif, Georgia, serif`
     return
   }
   if (fontFamily === 'theme') {
