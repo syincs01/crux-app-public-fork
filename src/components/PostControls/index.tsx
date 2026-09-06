@@ -10,6 +10,11 @@ import {useOpenComposer} from '#/lib/hooks/useOpenComposer'
 import {type Shadow} from '#/state/cache/types'
 import {useFeedFeedbackContext} from '#/state/feed-feedback'
 import {
+  useAgreeMutation,
+  useMyAgreements,
+  useWithdrawAgreementMutation,
+} from '#/state/queries/crux-agree'
+import {
   usePostLikeMutationQueue,
   usePostRepostMutationQueue,
 } from '#/state/queries/post'
@@ -85,6 +90,13 @@ let PostControls = ({
     feedDescriptor,
     logContext,
   )
+  // A8 ruling 1: agreement is a record in the person's own repo; the button
+  // reads it from there, never from a count.
+  const {data: agreements} = useMyAgreements()
+  const agree = useAgreeMutation()
+  const withdraw = useWithdrawAgreementMutation()
+  const agreeUri = agreements?.get(post.uri)
+  const isAgreed = !!agreeUri
   const requireAuth = useRequireAuth()
   const {sendInteraction} = useFeedFeedbackContext()
   const {captureAction} = useProgressGuideControls()
@@ -130,31 +142,52 @@ let PostControls = ({
     }
   }
 
-  const onRepost = async () => {
-    if (isBlocked) {
-      Toast.show(l`Cannot interact with a blocked user`, {
-        type: 'warning',
-      })
-      return
-    }
+  const blocked = () => {
+    if (!isBlocked) return false
+    Toast.show(l`Cannot interact with a blocked user`, {type: 'warning'})
+    return true
+  }
 
-    const existingRepost = post.viewer?.repost
+  const onAgree = async () => {
+    if (blocked() || isAgreed) return
     try {
-      if (!existingRepost) {
-        sendInteraction({
-          item: post.uri,
-          event: 'app.bsky.feed.defs#interactionRepost',
-          feedContext,
-          reqId,
-        })
-        await queueRepost()
-      } else {
-        await queueUnrepost()
-      }
+      await agree.mutateAsync({uri: post.uri, cid: post.cid})
+    } catch {
+      Toast.show(l`Could not record your agreement`, {type: 'error'})
+    }
+  }
+
+  // A8 ruling 1: a repost is agreement. There is no repost without one.
+  const onAgreeAndRepost = async () => {
+    if (blocked()) return
+    await onAgree()
+    if (post.viewer?.repost) return
+    try {
+      sendInteraction({
+        item: post.uri,
+        event: 'app.bsky.feed.defs#interactionRepost',
+        feedContext,
+        reqId,
+      })
+      await queueRepost()
     } catch (err) {
       const e = err as Error
       if (e?.name !== 'AbortError') {
         throw e
+      }
+    }
+  }
+
+  // A8 ruling 7: taken back from the same button; the repost goes with it.
+  const onWithdraw = async () => {
+    if (blocked() || !agreeUri) return
+    try {
+      await withdraw.mutateAsync({subjectUri: post.uri, agreeUri})
+      if (post.viewer?.repost) await queueUnrepost()
+    } catch (err) {
+      const e = err as Error
+      if (e?.name !== 'AbortError') {
+        Toast.show(l`Could not withdraw your agreement`, {type: 'error'})
       }
     }
   }
@@ -254,9 +287,12 @@ let PostControls = ({
         </View>
         <View style={[a.flex_1, a.align_start]}>
           <RepostButton
+            isAgreed={isAgreed}
             isReposted={!!post.viewer?.repost}
             repostCount={(post.repostCount ?? 0) + (post.quoteCount ?? 0)}
-            onRepost={() => void onRepost()}
+            onAgree={() => void onAgree()}
+            onAgreeAndRepost={() => void onAgreeAndRepost()}
+            onWithdraw={() => void onWithdraw()}
             onQuote={onQuote}
             big={big}
             embeddingDisabled={Boolean(post.viewer?.embeddingDisabled)}

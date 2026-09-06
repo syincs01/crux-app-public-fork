@@ -14,19 +14,30 @@ import {
 } from './PostControlButton'
 import {useFormatPostStatCount} from './util'
 
+/**
+ * A8 ruling 1: a repost is agreement, so the menu is Agree · Agree and
+ * repost · Quote with a reason. There is no repost that is not an agreement,
+ * and agreement is taken back from the same button (A8 ruling 7).
+ */
 interface Props {
+  isAgreed: boolean
   isReposted: boolean
   repostCount?: number
-  onRepost: () => void
+  onAgree: () => void
+  onAgreeAndRepost: () => void
+  onWithdraw: () => void
   onQuote: () => void
   big?: boolean
   embeddingDisabled: boolean
 }
 
 export const RepostButton = ({
+  isAgreed,
   isReposted,
   repostCount,
-  onRepost,
+  onAgree,
+  onAgreeAndRepost,
+  onWithdraw,
   onQuote,
   big,
   embeddingDisabled,
@@ -36,16 +47,17 @@ export const RepostButton = ({
   const {hasSession} = useSession()
   const requireAuth = useRequireAuth()
   const formatPostStatCount = useFormatPostStatCount()
+  const active = isAgreed || isReposted
 
   return hasSession ? (
     <EventStopper onKeyDown={false}>
       <Menu.Root>
-        <Menu.Trigger label={_(msg`Repost or quote post`)}>
+        <Menu.Trigger label={_(msg`Agree, repost or quote`)}>
           {({props}) => {
             return (
               <PostControlButton
                 testID="repostBtn"
-                active={isReposted}
+                active={active}
                 activeColor={t.palette.positive_500}
                 label={props.accessibilityLabel}
                 big={big}
@@ -60,35 +72,46 @@ export const RepostButton = ({
             )
           }}
         </Menu.Trigger>
-        <Menu.Outer style={{minWidth: 170}}>
-          <Menu.Item
-            label={
-              isReposted
-                ? _(msg`Undo repost`)
-                : _(msg({message: `Repost`, context: `action`}))
-            }
-            testID="repostDropdownRepostBtn"
-            onPress={onRepost}>
-            <Menu.ItemText>
-              {isReposted
-                ? _(msg`Undo repost`)
-                : _(msg({message: `Repost`, context: `action`}))}
-            </Menu.ItemText>
-            <Menu.ItemIcon icon={Repost} position="right" />
-          </Menu.Item>
+        <Menu.Outer style={{minWidth: 200}}>
+          {isAgreed ? (
+            <Menu.Item
+              label={_(msg`Withdraw agreement`)}
+              testID="repostDropdownWithdrawBtn"
+              onPress={onWithdraw}>
+              <Menu.ItemText>{_(msg`Withdraw agreement`)}</Menu.ItemText>
+              <Menu.ItemIcon icon={Repost} position="right" />
+            </Menu.Item>
+          ) : (
+            <>
+              <Menu.Item
+                label={_(msg`Agree`)}
+                testID="repostDropdownAgreeBtn"
+                onPress={onAgree}>
+                <Menu.ItemText>{_(msg`Agree`)}</Menu.ItemText>
+                <Menu.ItemIcon icon={Repost} position="right" />
+              </Menu.Item>
+              <Menu.Item
+                label={_(msg`Agree and repost`)}
+                testID="repostDropdownRepostBtn"
+                onPress={onAgreeAndRepost}>
+                <Menu.ItemText>{_(msg`Agree and repost`)}</Menu.ItemText>
+                <Menu.ItemIcon icon={Repost} position="right" />
+              </Menu.Item>
+            </>
+          )}
           <Menu.Item
             disabled={embeddingDisabled}
             label={
               embeddingDisabled
                 ? _(msg`Quote posts disabled`)
-                : _(msg`Quote post`)
+                : _(msg`Quote with a reason`)
             }
             testID="repostDropdownQuoteBtn"
             onPress={onQuote}>
             <Menu.ItemText>
               {embeddingDisabled
                 ? _(msg`Quote posts disabled`)
-                : _(msg`Quote post`)}
+                : _(msg`Quote with a reason`)}
             </Menu.ItemText>
             <Menu.ItemIcon icon={Quote} position="right" />
           </Menu.Item>
@@ -98,9 +121,9 @@ export const RepostButton = ({
   ) : (
     <PostControlButton
       onPress={() => requireAuth(() => {})}
-      active={isReposted}
+      active={active}
       activeColor={t.palette.positive_500}
-      label={_(msg`Repost or quote post`)}
+      label={_(msg`Agree, repost or quote`)}
       big={big}>
       <PostControlButtonIcon icon={Repost} />
       {typeof repostCount !== 'undefined' && repostCount > 0 && (

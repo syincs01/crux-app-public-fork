@@ -19,19 +19,30 @@ import {
   PostControlButtonText,
 } from './PostControlButton'
 
+/**
+ * A8 ruling 1: a repost is agreement, so the sheet is Agree · Agree and
+ * repost · Quote with a reason; agreement is taken back from the same button
+ * (A8 ruling 7). There is no repost that is not an agreement.
+ */
 interface Props {
+  isAgreed: boolean
   isReposted: boolean
   repostCount?: number
-  onRepost: () => void
+  onAgree: () => void
+  onAgreeAndRepost: () => void
+  onWithdraw: () => void
   onQuote: () => void
   big?: boolean
   embeddingDisabled: boolean
 }
 
 let RepostButton = ({
+  isAgreed,
   isReposted,
   repostCount,
-  onRepost,
+  onAgree,
+  onAgreeAndRepost,
+  onWithdraw,
   onQuote,
   big,
   embeddingDisabled,
@@ -57,31 +68,31 @@ let RepostButton = ({
     <>
       <PostControlButton
         testID="repostBtn"
-        active={isReposted}
+        active={isAgreed || isReposted}
         activeColor={t.palette.positive_500}
         big={big}
         onPress={onPress}
         onLongPress={onLongPress}
         label={
-          isReposted
+          isAgreed
             ? _(
                 msg({
-                  message: `Undo repost (${plural(repostCount || 0, {
+                  message: `Withdraw agreement (${plural(repostCount || 0, {
                     one: '# repost',
                     other: '# reposts',
                   })})`,
                   comment:
-                    'Accessibility label for the repost button when the post has been reposted, verb followed by number of reposts and noun',
+                    'Accessibility label for the agree button when the person has agreed, verb followed by number of reposts and noun',
                 }),
               )
             : _(
                 msg({
-                  message: `Repost (${plural(repostCount || 0, {
+                  message: `Agree, repost or quote (${plural(repostCount || 0, {
                     one: '# repost',
                     other: '# reposts',
                   })})`,
                   comment:
-                    'Accessibility label for the repost button when the post has not been reposted, verb form followed by number of reposts and noun form',
+                    'Accessibility label for the agree button when the person has not agreed, verb form followed by number of reposts and noun form',
                 }),
               )
         }>
@@ -97,8 +108,10 @@ let RepostButton = ({
         nativeOptions={{preventExpansion: true}}>
         <Dialog.Handle />
         <RepostButtonDialogInner
-          isReposted={isReposted}
-          onRepost={onRepost}
+          isAgreed={isAgreed}
+          onAgree={onAgree}
+          onAgreeAndRepost={onAgreeAndRepost}
+          onWithdraw={onWithdraw}
           onQuote={onQuote}
           embeddingDisabled={embeddingDisabled}
         />
@@ -110,13 +123,17 @@ RepostButton = memo(RepostButton)
 export {RepostButton}
 
 let RepostButtonDialogInner = ({
-  isReposted,
-  onRepost,
+  isAgreed,
+  onAgree,
+  onAgreeAndRepost,
+  onWithdraw,
   onQuote,
   embeddingDisabled,
 }: {
-  isReposted: boolean
-  onRepost: () => void
+  isAgreed: boolean
+  onAgree: () => void
+  onAgreeAndRepost: () => void
+  onWithdraw: () => void
   onQuote: () => void
   embeddingDisabled: boolean
 }): React.ReactNode => {
@@ -125,84 +142,87 @@ let RepostButtonDialogInner = ({
   const playHaptic = useHaptics()
   const control = Dialog.useDialogContext()
 
-  const onPressRepost = useCallback(() => {
-    if (!isReposted) playHaptic()
-
-    control.close(() => {
-      onRepost()
-    })
-  }, [control, isReposted, onRepost, playHaptic])
-
-  const onPressQuote = useCallback(() => {
-    playHaptic()
-    control.close(() => {
-      onQuote()
-    })
-  }, [control, onQuote, playHaptic])
+  const closeThen = useCallback(
+    (fn: () => void, haptic = true) => {
+      if (haptic) playHaptic()
+      control.close(() => fn())
+    },
+    [control, playHaptic],
+  )
 
   const onPressClose = useCallback(() => control.close(), [control])
 
+  const item = (
+    label: string,
+    onPress: () => void,
+    Icon: typeof RepostIcon,
+    testID?: string,
+    disabled = false,
+  ) => (
+    <Button
+      key={label}
+      disabled={disabled}
+      testID={testID}
+      style={[a.justify_start, a.px_md, a.gap_sm]}
+      label={label}
+      onPress={onPress}
+      size="large"
+      variant="ghost"
+      color="primary">
+      <Icon
+        size="lg"
+        fill={
+          disabled ? t.atoms.text_contrast_low.color : t.palette.primary_500
+        }
+      />
+      <Text
+        style={[
+          a.font_semi_bold,
+          a.text_xl,
+          disabled && t.atoms.text_contrast_low,
+        ]}>
+        {label}
+      </Text>
+    </Button>
+  )
+
   return (
-    <Dialog.ScrollableInner label={_(msg`Repost or quote post`)}>
+    <Dialog.ScrollableInner label={_(msg`Agree, repost or quote`)}>
       <View style={a.gap_xl}>
         <View style={a.gap_xs}>
-          <Button
-            style={[a.justify_start, a.px_md, a.gap_sm]}
-            label={
-              isReposted
-                ? _(msg`Remove repost`)
-                : _(msg({message: `Repost`, context: 'action'}))
-            }
-            onPress={onPressRepost}
-            size="large"
-            variant="ghost"
-            color="primary">
-            <RepostIcon size="lg" fill={t.palette.primary_500} />
-            <Text style={[a.font_semi_bold, a.text_xl]}>
-              {isReposted ? (
-                <Trans>Remove repost</Trans>
-              ) : (
-                <Trans context="action">Repost</Trans>
-              )}
-            </Text>
-          </Button>
-          <Button
-            disabled={embeddingDisabled}
-            testID="quoteBtn"
-            style={[a.justify_start, a.px_md, a.gap_sm]}
-            label={
-              embeddingDisabled
-                ? _(msg`Quote posts disabled`)
-                : _(msg`Quote post`)
-            }
-            onPress={onPressQuote}
-            size="large"
-            variant="ghost"
-            color="primary">
-            <QuoteIcon
-              size="lg"
-              fill={
-                embeddingDisabled
-                  ? t.atoms.text_contrast_low.color
-                  : t.palette.primary_500
-              }
-            />
-            <Text
-              style={[
-                a.font_semi_bold,
-                a.text_xl,
-                embeddingDisabled && t.atoms.text_contrast_low,
-              ]}>
-              {embeddingDisabled ? (
-                <Trans>Quote posts disabled</Trans>
-              ) : (
-                <Trans>Quote post</Trans>
-              )}
-            </Text>
-          </Button>
+          {isAgreed
+            ? item(
+                _(msg`Withdraw agreement`),
+                () => closeThen(onWithdraw, false),
+                RepostIcon,
+                'withdrawBtn',
+              )
+            : [
+                item(
+                  _(msg`Agree`),
+                  () => closeThen(onAgree),
+                  RepostIcon,
+                  'agreeBtn',
+                ),
+                item(
+                  _(msg`Agree and repost`),
+                  () => closeThen(onAgreeAndRepost),
+                  RepostIcon,
+                  'repostBtn',
+                ),
+              ]}
+          {item(
+            embeddingDisabled
+              ? _(msg`Quote posts disabled`)
+              : _(msg`Quote with a reason`),
+            () => closeThen(onQuote),
+            QuoteIcon,
+            'quoteBtn',
+            embeddingDisabled,
+          )}
         </View>
         <Button
-          label={_(msg`Cancel quote post`)}
+          label={_(msg`Cancel`)}
           onPress={onPressClose}
           size="large"
           color="secondary">

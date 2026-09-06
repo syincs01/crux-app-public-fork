@@ -1030,6 +1030,14 @@ export const ComposePost = ({
       return
     }
 
+    // A8 ruling 3: a quote is a reason. An empty one is an agreement, and the
+    // button for that is Agree.
+    const first = thread.posts[0]
+    if (first?.embed.quote && first.richtext.graphemeLength === 0) {
+      setError(l`A quote needs a reason. To agree, use Agree.`)
+      return
+    }
+
     const {type: emptyType, filteredThread} = getFilteredThread()
 
     if (emptyType === 'non-trailing' && !skipEmptyConfirmedRef.current) {
@@ -1281,6 +1289,7 @@ export const ComposePost = ({
     emptyPostsPromptControl,
     getFilteredThread,
     linkQueries,
+    thread.posts,
   ])
 
   const handleConfirmSkipEmpty = () => {
