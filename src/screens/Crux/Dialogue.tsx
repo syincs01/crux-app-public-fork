@@ -67,6 +67,44 @@ type Bubble = {
 }
 
 /**
+ * The reply a message is: a post under the last of the room, on the same root,
+ * so the firehose compiles it as the next turn. The room and the game send the
+ * same way, so the two cannot drift (R3.3).
+ */
+export function useReplySend(
+  lastUri: string | undefined,
+  invalidate: readonly unknown[],
+) {
+  const pdsClient = usePdsClient()
+  const {currentAccount} = useSession()
+  const queryClient = useQueryClient()
+  const lastPost = usePostQuery(lastUri)
+  const me = currentAccount?.did
+  return {
+    loading: !lastPost.data,
+    send: async (text: string) => {
+      const parent = lastPost.data
+      if (!me || !parent) throw new Error('the room has not loaded')
+      const record = parent.record as {
+        reply?: {root: {uri: string; cid: string}}
+      }
+      const root = record.reply?.root ?? {uri: parent.uri, cid: parent.cid}
+      await pdsClient.call(com.atproto.repo.createRecord, {
+        repo: me,
+        collection: 'app.bsky.feed.post',
+        record: {
+          $type: 'app.bsky.feed.post',
+          text,
+          createdAt: new Date().toISOString(),
+          reply: {root, parent: {uri: parent.uri, cid: parent.cid}},
+        },
+      })
+      void queryClient.invalidateQueries({queryKey: invalidate})
+    },
+  }
+}
+
+/**
  * The room (A8 ruling 8): a dialogue in the platform's chat form. The post the
  * dialogue is under, pinned as the platform's own post card; the moves as
  * message bubbles with the platform's bubble rules (clusters, corners, own
@@ -76,23 +114,36 @@ type Bubble = {
  * firehose, compiled and folded by the same rule. A newcomer's composer is the
  * door: their words carry them in if they bear on the question; if not, the
  * record says so and asks (§8), never refuses. A dialogue never closes.
+ *
+ * A game is played in this same room (the game page §3), so everything from the
+ * screen down lives here and the two screens differ only in what they read and
+ * in the one line they put above the composer.
  */
-export function DialogueScreen({
-  route,
-}: NativeStackScreenProps<CommonNavigatorParams, 'Dialogue'>) {
+export function RoomBody({
+  room,
+  titleText,
+  testID,
+  send,
+  sendLoading,
+  viewerDid,
+  extraAboveComposer,
+}: {
+  room: {data?: Room; error?: {message: string} | null}
+  titleText: React.ReactNode
+  testID: string
+  send: (text: string) => Promise<void>
+  sendLoading: boolean
+  viewerDid: string | undefined
+  extraAboveComposer?: React.ReactNode
+}) {
   const t = useTheme()
   const {_} = useLingui()
   const {currentAccount} = useSession()
-  const pdsClient = usePdsClient()
-  const queryClient = useQueryClient()
-  const id = decodeURIComponent(route.params.id)
-  const room = useRoom(id)
   const rootPost = usePostQuery(room.data?.root.uri)
-  const lastPost = usePostQuery(room.data?.lastUri)
   const [showFolded, setShowFolded] = useState(false)
   const [pending, setPending] = useState<Bubble[]>([])
 
-  const me = currentAccount?.did
+  const me = viewerDid
   const myHandle = currentAccount?.handle
   const inRoom =
     !!myHandle && !!room.data?.messages.some(m => m.speaker === myHandle)
@@ -135,11 +186,8 @@ export function DialogueScreen({
     [bubbles, me],
   )
 
-  const send = async (text: string) => {
-    const parent = lastPost.data
-    if (!me || !parent || !text.trim()) return
-    const record = parent.record as {reply?: {root: {uri: string; cid: string}}}
-    const root = record.reply?.root ?? {uri: parent.uri, cid: parent.cid}
+  const onSend = async (text: string) => {
+    if (!me || !text.trim()) return
     setPending(p => [
       ...p,
       {
@@ -153,32 +201,19 @@ export function DialogueScreen({
       },
     ])
     try {
-      await pdsClient.call(com.atproto.repo.createRecord, {
-        repo: me,
-        collection: 'app.bsky.feed.post',
-        record: {
-          $type: 'app.bsky.feed.post',
-          text,
-          createdAt: new Date().toISOString(),
-          reply: {root, parent: {uri: parent.uri, cid: parent.cid}},
-        },
-      })
-      void queryClient.invalidateQueries({queryKey: ['crux-dialogue', id]})
-    } catch (e) {
+      await send(text)
+    } catch {
       setPending(p => p.filter(b => b.text !== text))
       Toast.show(_(msg`Could not send your message`), {type: 'error'})
-      throw e
     }
   }
 
   return (
-    <Layout.Screen testID="cruxDialogueScreen">
+    <Layout.Screen testID={testID}>
       <Layout.Header.Outer>
         <Layout.Header.BackButton />
         <Layout.Header.Content>
-          <Layout.Header.TitleText>
-            <Trans>Dialogue</Trans>
-          </Layout.Header.TitleText>
+          <Layout.Header.TitleText>{titleText}</Layout.Header.TitleText>
         </Layout.Header.Content>
         <Layout.Header.Slot />
       </Layout.Header.Outer>
@@ -291,17 +326,41 @@ export function DialogueScreen({
               </>
             ) : null}
           </ScrollView>
+          {extraAboveComposer}
           <MessageRepliesProvider scrollToMessage={() => false}>
             <MessageComposer
-              onSendMessage={text => void send(text)}
+              onSendMessage={text => void onSend(text)}
               messageEmbed={undefined}
               setEmbed={() => {}}
-              loading={!lastPost.data}
+              loading={sendLoading}
             />
           </MessageRepliesProvider>
         </View>
       </Layout.Center>
     </Layout.Screen>
+  )
+}
+
+/** A dialogue: the room over `/dialogue`, with nothing above the composer. */
+export function DialogueScreen({
+  route,
+}: NativeStackScreenProps<CommonNavigatorParams, 'Dialogue'>) {
+  const {currentAccount} = useSession()
+  const id = decodeURIComponent(route.params.id)
+  const room = useRoom(id)
+  const {send, loading} = useReplySend(room.data?.lastUri, [
+    'crux-dialogue',
+    id,
+  ])
+  return (
+    <RoomBody
+      testID="cruxDialogueScreen"
+      titleText={<Trans>Dialogue</Trans>}
+      room={room}
+      send={send}
+      sendLoading={loading}
+      viewerDid={currentAccount?.did}
+    />
   )
 }
 
