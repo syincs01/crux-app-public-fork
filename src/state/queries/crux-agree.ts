@@ -47,21 +47,32 @@ export function useAgreeMutation() {
   const {currentAccount} = useSession()
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({uri, cid}: {uri: string; cid: string}) => {
+    // `about`: which claim of the post is held — a post carries several, and
+    // "rest on" holds a reason that is rarely its first (founder ruling, 7 Sept 2026).
+    mutationFn: async ({
+      uri,
+      cid,
+      about,
+    }: {
+      uri: string
+      cid: string
+      about?: string
+    }) => {
       const r = await pdsClient.call(com.atproto.repo.createRecord, {
         repo: currentAccount!.did,
         collection: AGREE_COLLECTION,
         record: {
           $type: AGREE_COLLECTION,
           subject: {uri, cid},
+          ...(about ? {about} : {}),
           createdAt: new Date().toISOString(),
         },
       })
       return r.uri
     },
-    onSuccess: (agreeUri, {uri}) =>
+    onSuccess: (agreeUri, {uri, about}) =>
       qc.setQueryData<Map<string, string>>(KEY, m =>
-        new Map(m ?? []).set(uri, agreeUri),
+        new Map(m ?? []).set(about ? `${uri}#${about}` : uri, agreeUri),
       ),
   })
 }

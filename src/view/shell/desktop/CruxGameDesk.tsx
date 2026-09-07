@@ -10,14 +10,19 @@ import {
   type GameClaim,
   type GameMoveKind,
   type GameView,
+  type Owed,
   useGame,
+  useNearChunk,
 } from '#/lib/crux'
 import {useAgreeMutation} from '#/state/queries/crux-agree'
 import {usePostQuery} from '#/state/queries/post'
 import {usePdsClient, useSession} from '#/state/session'
+import {useReplySend} from '#/screens/Crux/Dialogue'
 import {EndingInWords} from '#/screens/Crux/Game'
 import {atoms as a, useTheme, web} from '#/alf'
 import {Button, ButtonText} from '#/components/Button'
+import * as Dialog from '#/components/Dialog'
+import * as TextField from '#/components/forms/TextField'
 import * as Prompt from '#/components/Prompt'
 import * as Toast from '#/components/Toast'
 import {Text} from '#/components/Typography'
@@ -86,8 +91,13 @@ export function CruxGameDesk() {
         web({maxHeight: 'calc(100vh - 130px)', overflowY: 'auto'}),
       ]}>
       <Stakes game={g} />
-      <WhereWeAre game={g} me={me} />
-      <WhatEachHasSaid game={g} />
+      <WhereWeAre game={g} me={me} rootUri={uri} lastUri={game.data?.lastUri} />
+      <WhatEachHasSaid
+        game={g}
+        me={iPlay ? me : undefined}
+        rootUri={uri}
+        lastUri={game.data?.lastUri}
+      />
       <TheBlock game={g} iPlay={iPlay} />
       {iPlay ? (
         <CloseAndLeave
@@ -146,7 +156,17 @@ function Stakes({game: g}: {game: GameView['game']}) {
 }
 
 /** §11.1: what is owed, phrased as an obligation and not as a status. */
-function WhereWeAre({game: g, me}: {game: GameView['game']; me?: string}) {
+function WhereWeAre({
+  game: g,
+  me,
+  rootUri,
+  lastUri,
+}: {
+  game: GameView['game']
+  me?: string
+  rootUri: string
+  lastUri: string | undefined
+}) {
   return (
     <View style={[a.gap_2xs]}>
       <HeadingText>
@@ -171,6 +191,17 @@ function WhereWeAre({game: g, me}: {game: GameView['game']; me?: string}) {
                     record as a default
                   </Trans>
                 </QuietText>
+              ) : null}
+              {o.by === me
+                ? o.restOn.map(r => <RestOnRow key={r.id} reason={r} />)
+                : null}
+              {o.by === me && o.what === 'asked what it rests on' ? (
+                <ChunkOffer
+                  owed={o}
+                  me={me}
+                  rootUri={rootUri}
+                  lastUri={lastUri}
+                />
               ) : null}
             </View>
           ))}
@@ -206,7 +237,18 @@ function DaysAgo({since}: {since: string}) {
  * player asserted against what they merely let stand. The two must look
  * different at a glance or a player is held to a burden they never took on.
  */
-function WhatEachHasSaid({game: g}: {game: GameView['game']}) {
+function WhatEachHasSaid({
+  game: g,
+  me,
+  rootUri,
+  lastUri,
+}: {
+  game: GameView['game']
+  /** The viewer, where they play; a spectator asks nothing (§11.9). */
+  me: string | undefined
+  rootUri: string
+  lastUri: string | undefined
+}) {
   return (
     <View style={[a.gap_sm]}>
       <HeadingText>
@@ -217,9 +259,20 @@ function WhatEachHasSaid({game: g}: {game: GameView['game']}) {
         return (
           <View key={h} style={[a.gap_2xs]}>
             <Text style={[a.text_sm, a.font_bold]}>@{h}</Text>
-            {store?.asserted.map(c => (
-              <Asserted key={c.id} claim={c} />
-            ))}
+            {store?.asserted
+              .filter(c => !c.stepFor)
+              .map(c => (
+                <Asserted
+                  key={c.id}
+                  claim={c}
+                  steps={store.asserted.filter(s => s.stepFor === c.id)}
+                  ask={
+                    me && h !== me && g.ending.kind === 'open'
+                      ? {rootUri, lastUri}
+                      : undefined
+                  }
+                />
+              ))}
             {store?.letStand.map(c => (
               <LetStand key={c.id} claim={c} />
             ))}
@@ -256,7 +309,17 @@ function StandingDot({tone}: {tone: GameClaim['tone']}) {
   )
 }
 
-function Asserted({claim}: {claim: GameClaim}) {
+function Asserted({
+  claim,
+  steps = [],
+  ask,
+}: {
+  claim: GameClaim
+  /** The inference steps of this claim ("X, because Y" as a causal claim): the step is a claim, shown as the step (the game §3). */
+  steps?: GameClaim[]
+  /** Where the viewer may ask what THIS claim rests on (the game §3: a move at one claim). */
+  ask?: {rootUri: string; lastUri: string | undefined}
+}) {
   const t = useTheme()
   return (
     <View style={[a.flex_row, a.gap_xs]}>
@@ -266,7 +329,142 @@ function Asserted({claim}: {claim: GameClaim}) {
         <Text style={[a.text_xs, t.atoms.text_contrast_medium]}>
           {claim.word}
         </Text>
+        {ask ? <AskWhatItRestsOn claim={claim} {...ask} /> : null}
+        {steps.map(s => (
+          <View key={s.id} testID="cruxGameStep" style={[a.pl_md, a.pt_2xs]}>
+            <Text
+              style={[a.text_xs, a.leading_snug, t.atoms.text_contrast_medium]}>
+              <Trans>the step:</Trans> {s.text} — {s.word}
+            </Text>
+            {ask ? <AskWhatItRestsOn claim={s} {...ask} /> : null}
+          </View>
+        ))}
       </View>
+    </View>
+  )
+}
+
+/**
+ * "Ask what it rests on" at one claim (the game §3: ask carries no burden; §4:
+ * only at what the other asserted). A post is several claims and a reply at
+ * the post is read at its first, so the desk is where a player names WHICH —
+ * the platform's `--about`. The words are the player's; the record reads them
+ * with the move declared. Found live 7 September 2026: "what does that price
+ * comparison rest on?" landed on the reasoned head claim, which held.
+ */
+function AskWhatItRestsOn({
+  claim,
+  rootUri,
+  lastUri,
+}: {
+  claim: GameClaim
+  rootUri: string
+  lastUri: string | undefined
+}) {
+  const {_} = useLingui()
+  const control = Dialog.useDialogControl()
+  return (
+    <>
+      <View style={[a.flex_row, a.pt_2xs]}>
+        <Button
+          testID="cruxGameAsk"
+          label={_(msg`Ask what it rests on`)}
+          size="tiny"
+          variant="outline"
+          color="secondary"
+          onPress={() => control.open()}>
+          <ButtonText>
+            <Trans>Ask what it rests on</Trans>
+          </ButtonText>
+        </Button>
+      </View>
+      <Dialog.Outer control={control}>
+        <Dialog.Handle />
+        <Dialog.ScrollableInner label={_(msg`Ask what it rests on`)}>
+          <AskInner
+            claim={claim}
+            control={control}
+            rootUri={rootUri}
+            lastUri={lastUri}
+          />
+          <Dialog.Close />
+        </Dialog.ScrollableInner>
+      </Dialog.Outer>
+    </>
+  )
+}
+
+function AskInner({
+  claim,
+  control,
+  rootUri,
+  lastUri,
+}: {
+  claim: GameClaim
+  control: Dialog.DialogControlProps
+  rootUri: string
+  lastUri: string | undefined
+}) {
+  const t = useTheme()
+  const {_} = useLingui()
+  const {currentAccount} = useSession()
+  const {send, loading} = useReplySend(lastUri, [
+    'crux-game',
+    rootUri,
+    currentAccount?.handle ?? '',
+  ])
+  const [text, setText] = useState(_(msg`What does this rest on?`))
+  const [busy, setBusy] = useState(false)
+  const ask = async () => {
+    if (!text.trim() || busy) return
+    setBusy(true)
+    try {
+      await send(text.trim(), {
+        about: claim.id,
+        move: 'asking what it rests on',
+      })
+      control.close()
+    } catch (e) {
+      Toast.show(_(msg`Could not ask: ${String(e)}`), {type: 'error'})
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <View style={[a.gap_md]}>
+      <Text style={[a.text_md, a.font_bold]}>
+        <Trans>Ask what this rests on</Trans>
+      </Text>
+      <Text style={[a.text_sm, a.leading_snug, t.atoms.text_contrast_medium]}>
+        {claim.text}
+      </Text>
+      <View style={[a.gap_xs]}>
+        <TextField.LabelText nativeID="crux-ask-label">
+          <Trans>Your words</Trans>
+        </TextField.LabelText>
+        <TextField.Root>
+          <Dialog.Input
+            testID="cruxGameAskInput"
+            value={text}
+            onChangeText={setText}
+            label={_(msg`Your words`)}
+            accessibilityLabelledBy="crux-ask-label"
+            multiline
+          />
+        </TextField.Root>
+      </View>
+      <Button
+        testID="cruxGameAskSend"
+        label={_(msg`Ask`)}
+        size="large"
+        color="primary"
+        variant="solid"
+        disabled={!text.trim() || busy || loading}
+        onPress={() => void ask()}>
+        <ButtonText>
+          <Trans>Ask</Trans>
+        </ButtonText>
+      </Button>
     </View>
   )
 }
@@ -370,6 +568,116 @@ function HoldRow({
           }>
           <ButtonText>
             <Trans>Hold</Trans>
+          </ButtonText>
+        </Button>
+      </View>
+    </View>
+  )
+}
+
+/**
+ * The well known is pointed at (foundations §14.1 part 4; founder ruling,
+ * 7 Sept 2026): the record already carries a reason for the claim this player
+ * owes an answer for, given by somebody outside their store. Holding it makes
+ * it theirs — clears what they owe, puts it among what they let stand, and
+ * puts it where the other player may question it (§4). One agree record,
+ * naming the claim of the post it holds.
+ */
+function RestOnRow({reason}: {reason: Owed['restOn'][number]}) {
+  const t = useTheme()
+  const {_} = useLingui()
+  const post = usePostQuery(reason.postUri || undefined)
+  const agree = useAgreeMutation()
+  const cid = post.data?.cid
+  return (
+    <View style={[a.pl_md, a.gap_2xs]}>
+      <Text style={[a.text_xs, a.leading_snug, t.atoms.text_contrast_medium]}>
+        <Trans>the record already carries a reason, from @{reason.by}:</Trans> “
+        {reason.text}”
+      </Text>
+      <View style={[a.flex_row]}>
+        <Button
+          testID="cruxGameRestOn"
+          label={_(msg`Rest on this`)}
+          size="tiny"
+          variant="outline"
+          color="secondary"
+          disabled={!cid || agree.isPending}
+          onPress={() =>
+            cid &&
+            agree.mutate(
+              {uri: reason.postUri, cid, about: reason.id},
+              {
+                onSuccess: () =>
+                  Toast.show(_(msg`Held. Your claim rests on it now.`)),
+              },
+            )
+          }>
+          <ButtonText>
+            <Trans>Rest on this</Trans>
+          </ButtonText>
+        </Button>
+      </View>
+    </View>
+  )
+}
+
+/**
+ * Rest on a chunk of shared knowledge (ruling 23; §14.1 part 4: the well
+ * known is pointed at). The record retrieves the chunk nearest the questioned
+ * claim (never merges, A8 ruling 3); the player decides. One reply at their
+ * claim carrying the chunk's link is the move — the tie is the record's, the
+ * claim then rests on the chunk, and the question is answered by pointing.
+ */
+function ChunkOffer({
+  owed,
+  me,
+  rootUri,
+  lastUri,
+}: {
+  owed: Owed
+  me: string
+  rootUri: string
+  lastUri: string | undefined
+}) {
+  const t = useTheme()
+  const {_} = useLingui()
+  const near = useNearChunk(owed.claim, me)
+  const {send, loading} = useReplySend(lastUri, ['crux-game', rootUri, me])
+  const [busy, setBusy] = useState(false)
+  const chunk = near.data?.chunk
+  if (!chunk) return null
+  const rest = async () => {
+    if (busy) return
+    setBusy(true)
+    try {
+      await send(`This rests on shared knowledge: ${chunk.url}`, {
+        about: owed.claimId,
+      })
+      Toast.show(_(msg`Your claim rests on that chunk now.`))
+    } catch (e) {
+      Toast.show(_(msg`Could not rest on it: ${String(e)}`), {type: 'error'})
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <View style={[a.pl_md, a.gap_2xs]}>
+      <Text style={[a.text_xs, a.leading_snug, t.atoms.text_contrast_medium]}>
+        <Trans>shared knowledge holds a chunk near this:</Trans> “
+        {chunk.heading}”
+      </Text>
+      <View style={[a.flex_row]}>
+        <Button
+          testID="cruxGameRestOnChunk"
+          label={_(msg`Rest on this chunk`)}
+          size="tiny"
+          variant="outline"
+          color="secondary"
+          disabled={busy || loading}
+          onPress={() => void rest()}>
+          <ButtonText>
+            <Trans>Rest on this chunk</Trans>
           </ButtonText>
         </Button>
       </View>

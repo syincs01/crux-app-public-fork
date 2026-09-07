@@ -47,6 +47,7 @@ export function GameScreen({
     currentAccount?.handle ?? '',
   ])
   const myHandle = currentAccount?.handle
+  const owedByMe = game.data?.game.owed.filter(o => o.by === myHandle) ?? []
   const spokenHere =
     !!myHandle && !!game.data?.messages.some(m => m.speaker === myHandle)
   return (
@@ -57,6 +58,7 @@ export function GameScreen({
       send={send}
       sendLoading={loading}
       viewerDid={currentAccount?.did}
+      aboutForMe={owedByMe.length === 1 ? owedByMe[0].claimId : undefined}
       extraAboveComposer={
         game.data ? (
           <WhoseMove

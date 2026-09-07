@@ -41,6 +41,8 @@ export type Statements = {
 /** The game (foundations §11): an invitation and the moves, records in the person's own repo (D3). */
 export const INVITE_COLLECTION = 'app.crux.game.invite'
 export const GAME_MOVE_COLLECTION = 'app.crux.game.move'
+/** The record's question (§8; the game §3), answered by the person asked — `crux answer` as a record in their own repo. */
+export const ANSWER_COLLECTION = 'app.crux.feed.answer'
 
 export type StakeKind = 'contrary' | 'condition' | 'question'
 export type GameMoveKind =
@@ -58,12 +60,41 @@ export type Room = {
     at: string
     move: string | null
     restsOn: {id: string; heading: string | null; url: string}[]
+    /** What the record asked the author and they have not answered: the machine's own move, theirs to answer. */
+    questions: {id: string; question: string; options: string[]}[]
   }[]
   folded: {uri: string; did: string; speaker: string; text: string}[]
   lastUri: string
 }
 
+/** Ruling 23 / §14.1 part 4: the chunk of shared knowledge nearest a claim, offered as what it rests on. */
+export type NearChunk = {
+  id: string
+  heading: string
+  subject: string
+  url: string
+  text: string
+  by: string
+  score: number
+}
+export function useNearChunk(
+  text: string | undefined,
+  handle: string | undefined,
+) {
+  return useQuery({
+    queryKey: ['crux-chunk-near', text ?? '', handle ?? ''],
+    enabled: !!text,
+    staleTime: 5 * 60_000,
+    queryFn: () =>
+      cruxGet<{chunk: NearChunk | null}>(
+        `/chunks/near?text=${encodeURIComponent(text!)}&handle=${encodeURIComponent(handle ?? '')}`,
+      ),
+  })
+}
+
 export type GameClaim = {
+  /** The claim this one is the inference step of: shown under it, never beside it. */
+  stepFor?: string
   id: string
   text: string
   by: string
@@ -80,6 +111,8 @@ export type Owed = {
   what: string
   since: string
   defaulted: boolean
+  /** Reasons the record already carries for this claim, given by somebody else: hold one to rest on it. */
+  restOn: {id: string; text: string; by: string; postUri: string}[]
 }
 export type Ending =
   | {kind: 'open'}

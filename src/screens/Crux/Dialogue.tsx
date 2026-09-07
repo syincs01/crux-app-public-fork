@@ -8,7 +8,7 @@ import {Trans} from '@lingui/react/macro'
 import {type NativeStackScreenProps} from '@react-navigation/native-stack'
 import {useQuery, useQueryClient} from '@tanstack/react-query'
 
-import {cruxGet, type Room} from '#/lib/crux'
+import {ANSWER_COLLECTION, cruxGet, type Room} from '#/lib/crux'
 import {createSanitizedDisplayName} from '#/lib/moderation/create-sanitized-display-name'
 import {type CommonNavigatorParams} from '#/lib/routes/types'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
@@ -63,6 +63,7 @@ type Bubble = {
   at: string
   caption: string | null
   restsOn: Room['messages'][number]['restsOn']
+  questions: Room['messages'][number]['questions']
   pending?: boolean
 }
 
@@ -82,7 +83,9 @@ export function useReplySend(
   const me = currentAccount?.did
   return {
     loading: !lastPost.data,
-    send: async (text: string) => {
+    // `crux` is the platform's `--about`/`--move`: the claim this reply is at
+    // (a post carries several; the desk names one) and the move declared.
+    send: async (text: string, crux?: {about?: string; move?: string}) => {
       const parent = lastPost.data
       if (!me || !parent) throw new Error('the room has not loaded')
       const record = parent.record as {
@@ -97,6 +100,7 @@ export function useReplySend(
           text,
           createdAt: new Date().toISOString(),
           reply: {root, parent: {uri: parent.uri, cid: parent.cid}},
+          ...(crux ? {crux} : {}),
         },
       })
       void queryClient.invalidateQueries({queryKey: invalidate})
@@ -127,14 +131,17 @@ export function RoomBody({
   sendLoading,
   viewerDid,
   extraAboveComposer,
+  aboutForMe,
 }: {
   room: {data?: Room; error?: {message: string} | null}
   titleText: React.ReactNode
   testID: string
-  send: (text: string) => Promise<void>
+  send: (text: string, crux?: {about?: string; move?: string}) => Promise<void>
   sendLoading: boolean
   viewerDid: string | undefined
   extraAboveComposer?: React.ReactNode
+  /** In a game: the one claim the viewer owes an answer at, where a pointing reply goes. */
+  aboutForMe?: string
 }) {
   const t = useTheme()
   const {_} = useLingui()
@@ -177,6 +184,7 @@ export function RoomBody({
         at: m.at,
         caption: m.move,
         restsOn: m.restsOn,
+        questions: m.questions ?? [],
       })),
       ...pending.filter(b => !said.has(b.text)),
     ]
@@ -186,7 +194,41 @@ export function RoomBody({
     [bubbles, me],
   )
 
+  // A8 ruling 3, applied to oneself (7 Sept 2026): a message near a claim of
+  // the viewer's OWN is offered as pointing at what they already said, never
+  // merged, never sent for them. The record retrieves; the person decides.
+  const [offer, setOffer] = useState<{
+    text: string
+    near: {claim: string; text: string; url: string; score: number}
+  } | null>(null)
   const onSend = async (text: string) => {
+    if (!me || !text.trim()) return
+    if (myHandle && !offer) {
+      try {
+        const r = await cruxGet<{
+          near: {
+            claim: string
+            text: string
+            url: string
+            score: number
+            speaker: string
+          } | null
+        }>(
+          `/near?text=${encodeURIComponent(text)}&speaker=${encodeURIComponent(myHandle)}`,
+        )
+        if (r.near) {
+          setOffer({text, near: r.near})
+          return
+        }
+      } catch {}
+    }
+    setOffer(null)
+    await sendNow(text)
+  }
+  const sendNow = async (
+    text: string,
+    crux?: {about?: string; move?: string},
+  ) => {
     if (!me || !text.trim()) return
     setPending(p => [
       ...p,
@@ -197,15 +239,25 @@ export function RoomBody({
         at: new Date().toISOString(),
         caption: null,
         restsOn: [],
+        questions: [],
         pending: true,
       },
     ])
     try {
-      await send(text)
+      await send(text, crux)
     } catch {
       setPending(p => p.filter(b => b.text !== text))
       Toast.show(_(msg`Could not send your message`), {type: 'error'})
     }
+  }
+  const pointInstead = async () => {
+    if (!offer) return
+    const o = offer
+    setOffer(null)
+    await sendNow(
+      `This rests on what I said: ${o.near.url}`,
+      aboutForMe ? {about: aboutForMe} : undefined,
+    )
   }
 
   return (
@@ -326,6 +378,46 @@ export function RoomBody({
               </>
             ) : null}
           </ScrollView>
+          {offer ? (
+            <View testID="cruxSaidBefore" style={[a.px_lg, a.py_sm, a.gap_xs]}>
+              <Text
+                style={[
+                  a.text_sm,
+                  a.leading_snug,
+                  t.atoms.text_contrast_medium,
+                ]}>
+                <Trans>You already said:</Trans> “{offer.near.text}”
+              </Text>
+              <View style={[a.flex_row, a.gap_sm]}>
+                <Button
+                  testID="cruxPointInstead"
+                  label={_(msg`Point at it`)}
+                  size="tiny"
+                  variant="solid"
+                  color="primary"
+                  onPress={() => void pointInstead()}>
+                  <ButtonText>
+                    <Trans>Point at it</Trans>
+                  </ButtonText>
+                </Button>
+                <Button
+                  testID="cruxSayAgain"
+                  label={_(msg`Say it again`)}
+                  size="tiny"
+                  variant="outline"
+                  color="secondary"
+                  onPress={() => {
+                    const o = offer
+                    setOffer(null)
+                    void sendNow(o.text)
+                  }}>
+                  <ButtonText>
+                    <Trans>Say it again</Trans>
+                  </ButtonText>
+                </Button>
+              </View>
+            </View>
+          ) : null}
           {extraAboveComposer}
           <MessageRepliesProvider scrollToMessage={() => false}>
             <MessageComposer
@@ -496,7 +588,10 @@ function DialogueBubble({
             </View>
           </View>
         </View>
-        {isLast && (bubble.caption || bubble.restsOn.length > 0) ? (
+        {isLast &&
+        (bubble.caption ||
+          bubble.restsOn.length > 0 ||
+          (isFromSelf && bubble.questions.length > 0)) ? (
           <View
             style={[
               !isFromSelf &&
@@ -526,9 +621,79 @@ function DialogueBubble({
                 {_(msg`rests on:`)} {c.heading ?? c.id}
               </InlineLinkText>
             ))}
+            {isFromSelf
+              ? bubble.questions.map(q => <OpenQuestion key={q.id} q={q} />)
+              : null}
           </View>
         ) : null}
       </View>
     </>
+  )
+}
+
+/**
+ * The record's question under the author's own words (§8: ask about the
+ * uncertain component; the game §3: the machine's own move, §4: the player
+ * answers it). One button per offered reading; the answer is a record in the
+ * person's own repo and reaches the record through the firehose, like every
+ * other move. Only the author sees it: nobody else can answer for them.
+ */
+// ponytail: shown under the bubble in a room only, and only the offered readings.
+//   Ceiling: a question on a post that is in no room (the timeline), or an
+//     answer in the person's own words (the CLI takes one; this offers none).
+//   Upgrade: the same component on the post card, with a text field.
+function OpenQuestion({q}: {q: Room['messages'][number]['questions'][number]}) {
+  const t = useTheme()
+  const {_} = useLingui()
+  const pdsClient = usePdsClient()
+  const {currentAccount} = useSession()
+  const [sent, setSent] = useState<string | null>(null)
+  const answer = async (i: number) => {
+    if (!currentAccount || sent) return
+    setSent(q.options[i])
+    try {
+      await pdsClient.call(com.atproto.repo.createRecord, {
+        repo: currentAccount.did,
+        collection: ANSWER_COLLECTION,
+        record: {
+          $type: ANSWER_COLLECTION,
+          question: q.id,
+          choice: String(i + 1),
+          createdAt: new Date().toISOString(),
+        },
+      })
+    } catch (e) {
+      setSent(null)
+      Toast.show(_(msg`Could not send that answer: ${String(e)}`), {
+        type: 'error',
+      })
+    }
+  }
+  return (
+    <View testID="cruxOpenQuestion" style={[a.pt_xs, a.align_end, a.gap_xs]}>
+      <Text style={[a.text_xs, t.atoms.text_contrast_medium, a.text_right]}>
+        {q.question}
+      </Text>
+      {sent ? (
+        <Text style={[a.text_xs, t.atoms.text_contrast_medium, a.text_right]}>
+          {sent}
+        </Text>
+      ) : (
+        <View style={[a.flex_row, a.flex_wrap, a.justify_end, a.gap_xs]}>
+          {q.options.map((o, i) => (
+            <Button
+              key={o}
+              testID="cruxAnswer"
+              label={o}
+              size="tiny"
+              variant="outline"
+              color="secondary"
+              onPress={() => answer(i)}>
+              <ButtonText>{o}</ButtonText>
+            </Button>
+          ))}
+        </View>
+      )}
+    </View>
   )
 }
