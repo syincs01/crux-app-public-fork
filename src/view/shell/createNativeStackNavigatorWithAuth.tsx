@@ -206,7 +206,14 @@ function NativeStackNavigator({
           ) : (
             <DesktopLeftNav routeName={activeRoute.name} />
           )}
-          {!isMobile && <DesktopRightNav routeName={activeRoute.name} />}
+          {!isMobile && (
+            <DesktopRightNav
+              routeName={activeRoute.name}
+              routeParams={
+                activeRoute.params as Record<string, string> | undefined
+              }
+            />
+          )}
         </>
       )}
 

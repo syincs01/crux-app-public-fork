@@ -77,6 +77,7 @@ import {DialogueScreen} from '#/screens/Crux/Dialogue'
 import {GameScreen} from '#/screens/Crux/Game'
 import {GamesScreen} from '#/screens/Crux/Games'
 import {KnowledgeScreen} from '#/screens/Crux/Knowledge'
+import {KnowledgeBlockScreen} from '#/screens/Crux/KnowledgeBlock'
 import {KnowledgeSubjectScreen} from '#/screens/Crux/KnowledgeSubject'
 import {WorldviewsScreen} from '#/screens/Crux/Worldviews'
 import {CustomFeedScreen} from '#/screens/CustomFeed'
@@ -582,6 +583,11 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
       <Stack.Screen
         name="Knowledge"
         getComponent={() => KnowledgeScreen}
+        options={{title: title(msg`Knowledge`)}}
+      />
+      <Stack.Screen
+        name="KnowledgeBlock"
+        getComponent={() => KnowledgeBlockScreen}
         options={{title: title(msg`Knowledge`)}}
       />
       <Stack.Screen

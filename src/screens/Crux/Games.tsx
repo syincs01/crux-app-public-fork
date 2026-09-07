@@ -42,10 +42,7 @@ export function GamesScreen() {
       <Layout.Content>
         <View style={[a.px_lg, a.py_lg, a.gap_xl]}>
           {games.error ? (
-            <Text style={[a.text_sm]}>
-              <Trans>Crux is not answering:</Trans>{' '}
-              {String(games.error.message)}
-            </Text>
+            <Text style={[a.text_sm]}>{String(games.error.message)}</Text>
           ) : (
             <>
               <Section titleText={<Trans>Invitations to you</Trans>}>
@@ -240,11 +237,13 @@ function GameRow({game}: {game: Games['games'][number]}) {
       ? l`@${e.by} offered to close`
       : e.kind === 'agreed'
         ? l`agreed — a block was made`
-        : e.kind === 'parted'
-          ? l`you parted here`
-          : e.kind === 'unfinished'
-            ? l`left unfinished by @${e.by} on ${new Date(e.at).toLocaleDateString()}`
-            : l`open`
+        : e.kind === 'refused'
+          ? l`the close did not take — an answer is still owed`
+          : e.kind === 'parted'
+            ? l`you parted here`
+            : e.kind === 'unfinished'
+              ? l`left unfinished by @${e.by} on ${new Date(e.at).toLocaleDateString()}`
+              : l`open`
   return (
     <Button
       testID="cruxGameRow"

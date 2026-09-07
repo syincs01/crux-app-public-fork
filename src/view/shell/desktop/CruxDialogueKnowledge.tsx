@@ -24,17 +24,14 @@ type Subject = {name: string; chunks: Chunk[]}
  * and a search over Knowledge whose Copy link gives the URL a message pastes
  * to rest on a chunk (A7 ruling 4). Web only, like the rest of the right bar.
  */
-export function CruxDialogueKnowledge() {
+export function CruxDialogueKnowledge({id: param}: {id?: string | undefined}) {
   const t = useTheme()
   const {_} = useLingui()
   // ponytail: the room's id is read from the URL, since the right column sits
   //   outside the screen's navigator on web.
   //   Ceiling: native, or a route shape other than /dialogue/:id.
   //   Upgrade: the screen publishes its id through a context the bar reads.
-  const id = useMemo(() => {
-    const m = /^\/dialogue\/([^/?#]+)/.exec(window.location.pathname)
-    return m ? decodeURIComponent(m[1]) : ''
-  }, [])
+  const id = param ? decodeURIComponent(param) : ''
   const room = useRoom(id)
   const index = useQuery({
     queryKey: ['crux-knowledge'],

@@ -12,6 +12,7 @@ export const router = new Router<AllNavigatableRoutes>({
   Feeds: '/feeds',
   Worldviews: '/worldviews',
   Knowledge: '/knowledge',
+  KnowledgeBlock: '/knowledge/b/:id',
   KnowledgeSubject: '/knowledge/:name',
   Dialogue: '/dialogue/:id',
   Games: '/games',

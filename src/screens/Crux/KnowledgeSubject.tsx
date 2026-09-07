@@ -57,10 +57,7 @@ export function KnowledgeSubjectScreen({
       <Layout.Content>
         <View style={[a.px_lg, a.py_lg, a.gap_xl]}>
           {subject.error ? (
-            <Text style={[a.text_sm]}>
-              <Trans>Crux is not answering:</Trans>{' '}
-              {String(subject.error.message)}
-            </Text>
+            <Text style={[a.text_sm]}>{String(subject.error.message)}</Text>
           ) : (
             subject.data?.chunks.map(c => (
               <View

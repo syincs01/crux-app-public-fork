@@ -65,6 +65,7 @@ type Bubble = {
   restsOn: Room['messages'][number]['restsOn']
   questions: Room['messages'][number]['questions']
   pending?: boolean
+  event?: true
 }
 
 /**
@@ -146,7 +147,7 @@ export function RoomBody({
   const t = useTheme()
   const {_} = useLingui()
   const {currentAccount} = useSession()
-  const rootPost = usePostQuery(room.data?.root.uri)
+  const rootPost = usePostQuery(room.data?.about?.uri ?? room.data?.root.uri)
   const [showFolded, setShowFolded] = useState(false)
   const [pending, setPending] = useState<Bubble[]>([])
 
@@ -185,6 +186,7 @@ export function RoomBody({
         caption: m.move,
         restsOn: m.restsOn,
         questions: m.questions ?? [],
+        ...(m.event ? {event: m.event} : {}),
       })),
       ...pending.filter(b => !said.has(b.text)),
     ]
@@ -223,7 +225,10 @@ export function RoomBody({
       } catch {}
     }
     setOffer(null)
-    await sendNow(text)
+    // A message from the player who owes exactly one answer is at that claim
+    // (the desk says so above the composer); without this the answer compiled
+    // as a post about nothing and the player went on owing (7 Sept 2026).
+    await sendNow(text, aboutForMe ? {about: aboutForMe} : undefined)
   }
   const sendNow = async (
     text: string,
@@ -281,7 +286,6 @@ export function RoomBody({
             contentContainerStyle={[a.flex_grow, a.justify_end, a.pb_md]}>
             {room.error ? (
               <Text style={[a.text_sm, a.px_lg, a.py_lg]}>
-                <Trans>Crux is not answering:</Trans>{' '}
                 {String(room.error.message)}
               </Text>
             ) : room.data ? (
@@ -306,17 +310,32 @@ export function RoomBody({
                   ) : null}
                 </View>
 
-                {bubbles.map((b, i) => (
-                  <DialogueBubble
-                    key={b.key}
-                    bubble={b}
-                    prev={bubbles[i - 1]}
-                    next={bubbles[i + 1]}
-                    isFromSelf={b.did === me}
-                    isGroup={isGroup}
-                    profile={profileOf.get(b.did)}
-                  />
-                ))}
+                {bubbles.map((b, i) =>
+                  b.event ? (
+                    <Text
+                      key={b.key}
+                      testID="cruxRoomEvent"
+                      style={[
+                        a.text_sm,
+                        a.text_center,
+                        a.px_lg,
+                        a.py_md,
+                        t.atoms.text_contrast_medium,
+                      ]}>
+                      {b.text}
+                    </Text>
+                  ) : (
+                    <DialogueBubble
+                      key={b.key}
+                      bubble={b}
+                      prev={bubbles[i - 1]}
+                      next={bubbles[i + 1]}
+                      isFromSelf={b.did === me}
+                      isGroup={isGroup}
+                      profile={profileOf.get(b.did)}
+                    />
+                  ),
+                )}
 
                 {room.data.folded.length > 0 ? (
                   <View style={[a.mt_lg]}>
@@ -409,7 +428,10 @@ export function RoomBody({
                   onPress={() => {
                     const o = offer
                     setOffer(null)
-                    void sendNow(o.text)
+                    void sendNow(
+                      o.text,
+                      aboutForMe ? {about: aboutForMe} : undefined,
+                    )
                   }}>
                   <ButtonText>
                     <Trans>Say it again</Trans>
@@ -618,7 +640,7 @@ function DialogueBubble({
                   t.atoms.text_contrast_medium,
                   isFromSelf ? a.text_right : a.text_left,
                 ]}>
-                {_(msg`rests on:`)} {c.heading ?? c.id}
+                {_(msg`rests on:`)} {c.heading ?? _(msg`a claim on the record`)}
               </InlineLinkText>
             ))}
             {isFromSelf

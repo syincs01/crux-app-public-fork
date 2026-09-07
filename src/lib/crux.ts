@@ -9,9 +9,16 @@ import {useQuery} from '@tanstack/react-query'
 export const CRUX_BRIDGE =
   process.env.EXPO_PUBLIC_CRUX_BRIDGE ?? 'http://localhost:8788'
 
+// The one place a bridge failure is worded (R6.4: a reader never sees a path,
+// a status or a stack). A route that found nothing says so in its own
+// sentence, e.g. "no game at that post"; anything else is Crux not answering.
 export async function cruxGet<T>(path: string): Promise<T> {
-  const r = await fetch(`${CRUX_BRIDGE}${path}`)
-  if (!r.ok) throw new Error(`crux ${path}: ${r.status}`)
+  const r = await fetch(`${CRUX_BRIDGE}${path}`).catch(() => null)
+  if (!r) throw new Error('Crux is not answering.')
+  if (!r.ok) {
+    const body = (await r.json().catch(() => null)) as {error?: string} | null
+    throw new Error(body?.error ?? 'Crux is not answering.')
+  }
   return (await r.json()) as T
 }
 
@@ -52,6 +59,8 @@ export type Room = {
   id: string
   question: string
   root: {uri: string; did: string; speaker: string; text: string}
+  /** A game: the post it is about, pinned in place of the acceptance. */
+  about?: {uri: string} | null
   messages: {
     uri: string
     did: string
@@ -62,6 +71,8 @@ export type Room = {
     restsOn: {id: string; heading: string | null; url: string}[]
     /** What the record asked the author and they have not answered: the machine's own move, theirs to answer. */
     questions: {id: string; question: string; options: string[]}[]
+    /** A line of the record's own — a hold made with the agree button — not a person's words. */
+    event?: true
   }[]
   folded: {uri: string; did: string; speaker: string; text: string}[]
   lastUri: string
@@ -120,6 +131,8 @@ export type Ending =
   | {kind: 'agreed'; blockId: string; at: string}
   | {kind: 'parted'; at: string}
   | {kind: 'unfinished'; by: string; at: string}
+  /** The close was accepted and did not take: an answer is still owed. */
+  | {kind: 'refused'; by: string; at: string}
 
 export type GameView = Room & {
   game: {
@@ -165,6 +178,36 @@ export type Games = {
     ending: Ending
     url: string
   }[]
+}
+
+/** A block (A7 ruling 3): the claims two players both held when their game closed. */
+export type Block = {
+  id: string
+  version: number
+  question: string
+  claims: string[]
+  holders: string[]
+  madeAt: string
+  game: {root: string; url: string}
+  /** The block in prose: the claims both hold and what they rest on, phrased from the record; or the material itself, one sentence per item. */
+  paragraph: string[]
+  phrased: boolean
+  /** On the index: how many earlier blocks were made at this question, superseded by this one. */
+  earlier?: number
+}
+export type Knowledge = {blocks: Block[]}
+
+export function useKnowledge() {
+  return useQuery({
+    queryKey: ['crux-knowledge'],
+    queryFn: () => cruxGet<Knowledge>('/knowledge'),
+  })
+}
+export function useBlock(id: string) {
+  return useQuery({
+    queryKey: ['crux-knowledge', 'block', id],
+    queryFn: () => cruxGet<Block>(`/knowledge/b/${encodeURIComponent(id)}`),
+  })
 }
 
 export function useGame(uri: string, viewer: string | undefined) {

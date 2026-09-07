@@ -1,4 +1,4 @@
-import {useMemo, useState} from 'react'
+import {useState} from 'react'
 import {View} from 'react-native'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
@@ -53,17 +53,13 @@ import {com} from '#/lexicons'
  *     record reads it as a withdrawal.
  *   Upgrade: a take-back move with the same falls-preview the Hold rows carry.
  */
-export function CruxGameDesk() {
+export function CruxGameDesk({uri: param}: {uri?: string | undefined}) {
   const t = useTheme()
   const {currentAccount} = useSession()
-  // ponytail: the game's root uri is read from the URL, since the right column
-  //   sits outside the screen's navigator on web.
-  //   Ceiling: native, or a route shape other than /game/:uri.
-  //   Upgrade: the screen publishes its uri through a context the bar reads.
-  const uri = useMemo(() => {
-    const m = /^\/game\/([^/?#]+)/.exec(window.location.pathname)
-    return m ? decodeURIComponent(m[1]) : ''
-  }, [])
+  // The game's root uri comes from the route, as the screen's does: read from
+  // the address once at mount, the desk stayed blank for anyone who reached
+  // the game by clicking inside the app (7 September 2026).
+  const uri = param ? decodeURIComponent(param) : ''
   const game = useGame(uri, currentAccount?.handle)
   const g = game.data?.game
   const me = currentAccount?.handle
@@ -736,7 +732,12 @@ function CloseAndLeave({
   const iOffered = g.ending.kind === 'offered' && g.ending.by === me
   const theyOffered = g.ending.kind === 'offered' && g.ending.by !== me
   // The ending is reached: the moves below would land on a game nobody is playing.
-  if (g.ending.kind !== 'open' && g.ending.kind !== 'offered') return null
+  if (
+    g.ending.kind !== 'open' &&
+    g.ending.kind !== 'offered' &&
+    g.ending.kind !== 'refused'
+  )
+    return null
   const iOwe = g.owed.find(o => o.by === me)
   // The refusal is server-side: a settled game shows as agreed and this whole
   // section is gone, so an acceptance still standing after a refetch is one the

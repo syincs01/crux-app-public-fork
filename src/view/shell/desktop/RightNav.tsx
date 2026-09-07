@@ -44,7 +44,14 @@ function useWebQueryParams() {
   return params
 }
 
-export function DesktopRightNav({routeName}: {routeName: string}) {
+export function DesktopRightNav({
+  routeName,
+  routeParams,
+}: {
+  routeName: string
+  /** The active route's params — the game or dialogue the column is beside. */
+  routeParams?: Record<string, string> | undefined
+}) {
   const t = useTheme()
   const {_} = useLingui()
   const {hasSession, currentAccount} = useSession()
@@ -89,8 +96,10 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
       ]}>
       {!isSearchScreen && <DesktopSearch />}
 
-      {routeName === 'Dialogue' && <CruxDialogueKnowledge />}
-      {routeName === 'Game' && <CruxGameDesk />}
+      {routeName === 'Dialogue' && (
+        <CruxDialogueKnowledge id={routeParams?.id} />
+      )}
+      {routeName === 'Game' && <CruxGameDesk uri={routeParams?.uri} />}
 
       {hasSession && (
         <>

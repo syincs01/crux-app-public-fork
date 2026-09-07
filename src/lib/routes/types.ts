@@ -23,6 +23,7 @@ export type CommonNavigatorParams = {
   NotFound: undefined
   Worldviews: undefined
   Knowledge: undefined
+  KnowledgeBlock: {id: string}
   KnowledgeSubject: {name: string}
   Dialogue: {id: string}
   Games: undefined

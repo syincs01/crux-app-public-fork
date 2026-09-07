@@ -64,7 +64,6 @@ export function WorldviewsScreen() {
               <Quiz statements={statements.data} />
             ) : statements.error || view.error ? (
               <Text style={[a.text_sm]} testID="cruxWorldviewError">
-                <Trans>Crux is not answering:</Trans>{' '}
                 {String((statements.error ?? view.error)?.message)}
               </Text>
             ) : (

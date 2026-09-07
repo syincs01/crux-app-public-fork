@@ -6,6 +6,7 @@ import {type CommonNavigatorParams} from '#/lib/routes/types'
 import {useSession} from '#/state/session'
 import {RoomBody, useReplySend} from '#/screens/Crux/Dialogue'
 import {atoms as a, useTheme} from '#/alf'
+import {InlineLinkText} from '#/components/Link'
 import {Text} from '#/components/Typography'
 
 /**
@@ -16,7 +17,16 @@ export function EndingInWords({ending: e}: {ending: Ending}) {
   return e.kind === 'offered' ? (
     <Trans>@{e.by} offered to close</Trans>
   ) : e.kind === 'agreed' ? (
-    <Trans>Agreed — a block was made</Trans>
+    <Trans>
+      Agreed —{' '}
+      <InlineLinkText
+        label="a block was made"
+        to={`/knowledge/b/${encodeURIComponent(e.blockId)}`}>
+        a block was made
+      </InlineLinkText>
+    </Trans>
+  ) : e.kind === 'refused' ? (
+    <Trans>The close did not take — an answer is still owed</Trans>
   ) : e.kind === 'parted' ? (
     <Trans>You parted here</Trans>
   ) : e.kind === 'unfinished' ? (
@@ -58,7 +68,11 @@ export function GameScreen({
       send={send}
       sendLoading={loading}
       viewerDid={currentAccount?.did}
-      aboutForMe={owedByMe.length === 1 ? owedByMe[0].claimId : undefined}
+      // A message from a player who owes answers is at the oldest of them —
+      // the top of the burden (foundations §11.1) — unless the desk points it
+      // elsewhere. Only-when-exactly-one left a player owing two with every
+      // answer landing on the last message's claim instead (7 Sept 2026).
+      aboutForMe={owedByMe[0]?.claimId}
       extraAboveComposer={
         game.data ? (
           <WhoseMove
