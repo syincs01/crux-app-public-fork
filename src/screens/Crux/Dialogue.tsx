@@ -283,7 +283,7 @@ export function RoomBody({
             //   Upgrade: the platform's List with maintainVisibleContentPosition
             //     and an initial scroll to the end, as MessagesList does.
             style={[a.flex_1]}
-            contentContainerStyle={[a.flex_grow, a.justify_end, a.pb_md]}>
+            contentContainerStyle={[a.flex_grow, a.pb_md]}>
             {room.error ? (
               <Text style={[a.text_sm, a.px_lg, a.py_lg]}>
                 {String(room.error.message)}

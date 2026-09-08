@@ -133,7 +133,12 @@ function Stakes({game: g}: {game: GameView['game']}) {
         <Trans>Stakes</Trans>
       </HeadingText>
       <LineText>
-        <Trans>@{g.players.defender.handle} holds:</Trans> {g.claim}
+        {g.claimDoubted ? (
+          <Trans>@{g.players.defender.handle} doubts:</Trans>
+        ) : (
+          <Trans>@{g.players.defender.handle} holds:</Trans>
+        )}{' '}
+        {g.claim}
       </LineText>
       {s ? (
         <LineText>
@@ -179,6 +184,14 @@ function WhereWeAre({
               <LineText>
                 <Trans>@{o.by} owes an answer:</Trans> “{o.claim}” — {o.what},{' '}
                 <DaysAgo since={o.since} />
+                {o.by === me ? (
+                  <>
+                    {' '}
+                    <Trans>
+                      — say what it rests on in a message, or take it back.
+                    </Trans>
+                  </>
+                ) : null}
               </LineText>
               {o.defaulted ? (
                 <QuietText>
@@ -272,7 +285,14 @@ function WhatEachHasSaid({
             {store?.letStand.map(c => (
               <LetStand key={c.id} claim={c} />
             ))}
-            {!store?.asserted.length && !store?.letStand.length ? (
+            {store?.doubts.map(c => (
+              <QuietText key={c.id}>
+                <Trans>doubts:</Trans> {c.text}
+              </QuietText>
+            ))}
+            {!store?.asserted.length &&
+            !store?.letStand.length &&
+            !store?.doubts.length ? (
               <QuietText>
                 <Trans>Nothing yet.</Trans>
               </QuietText>
@@ -530,11 +550,14 @@ function HoldRow({
 }) {
   const t = useTheme()
   const {_} = useLingui()
-  const post = usePostQuery(claim.postUri || undefined)
+  // The record's own cid first: the stake's pseudo-post is on no AppView.
+  const post = usePostQuery(
+    claim.postCid ? undefined : claim.postUri || undefined,
+  )
   const agree = useAgreeMutation()
   // Read off the query, never dereferenced inside the handler: the compiler
   // hoists a `post.data!.cid` in there into the render and it throws.
-  const cid = post.data?.cid
+  const cid = claim.postCid || post.data?.cid
   if (!claim.postUri) return null
   return (
     <View style={[a.gap_2xs, a.pt_xs]}>
@@ -558,7 +581,9 @@ function HoldRow({
           onPress={() =>
             cid &&
             agree.mutate(
-              {uri: claim.postUri, cid},
+              // `about`: THIS claim — a post carries several, and the record
+              // holds its first without it (8 September 2026).
+              {uri: claim.postUri, cid, about: claim.id},
               {onSuccess: () => Toast.show(_(msg`Held. It is in the block.`))},
             )
           }>
@@ -742,7 +767,10 @@ function CloseAndLeave({
   // The refusal is server-side: a settled game shows as agreed and this whole
   // section is gone, so an acceptance still standing after a refetch is one the
   // machine would not take.
-  const refused = acceptedAt > 0 && updatedAt > acceptedAt
+  const refused =
+    g.ending.kind === 'refused' || (acceptedAt > 0 && updatedAt > acceptedAt)
+  const refusedWhy =
+    g.ending.kind === 'refused' ? g.ending.why : 'an answer is still owed'
 
   return (
     <View style={[a.gap_xs]}>
@@ -843,7 +871,7 @@ function CloseAndLeave({
       ) : null}
       {refused ? (
         <QuietText>
-          <Trans>The close needs the open answers first</Trans>
+          <Trans>The close did not take — {refusedWhy}</Trans>
         </QuietText>
       ) : null}
       <Prompt.Basic

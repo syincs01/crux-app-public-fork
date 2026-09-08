@@ -59,6 +59,21 @@ export function GamesScreen() {
                   ))
                 )}
               </Section>
+              {games.data && games.data.sent.length > 0 ? (
+                <Section titleText={<Trans>Waiting on them</Trans>}>
+                  {games.data.sent.map(i => (
+                    <View
+                      key={i.uri}
+                      testID="cruxSentInvitation"
+                      style={[a.gap_2xs]}>
+                      <Text style={[a.text_md, a.leading_snug]}>
+                        <Trans>You asked @{i.to} for a game</Trans>
+                      </Text>
+                      <QuietText>{i.subject.text}</QuietText>
+                    </View>
+                  ))}
+                </Section>
+              ) : null}
               <Section titleText={<Trans>Your games</Trans>}>
                 {games.data && games.data.games.length === 0 ? (
                   <QuietText>
@@ -175,6 +190,30 @@ function Invitation({invite}: {invite: Games['invites'][number]}) {
     }
   }
 
+  // A9 rule 6: declined, the invitation is rendered nowhere. The record is the
+  // invitee's own, naming the invitation; the bridge hides it for both.
+  const decline = async () => {
+    if (!currentAccount) return
+    try {
+      await pdsClient.call(com.atproto.repo.createRecord, {
+        repo: currentAccount.did,
+        collection: 'app.crux.game.decline',
+        record: {
+          $type: 'app.crux.game.decline',
+          invite: invite.uri,
+          createdAt: new Date().toISOString(),
+        },
+      })
+      Toast.show(l`Declined — they will not see it as a game`)
+      setTimeout(
+        () => void qc.invalidateQueries({queryKey: ['crux-games']}),
+        2500,
+      )
+    } catch (e) {
+      Toast.show((e as Error).message, {type: 'error'})
+    }
+  }
+
   return (
     <View
       testID="cruxInvitation"
@@ -221,6 +260,19 @@ function Invitation({invite}: {invite: Games['invites'][number]}) {
           </ButtonText>
           {accepting ? <ButtonIcon icon={Loader} /> : null}
         </Button>
+        <Button
+          testID="cruxDeclineInviteBtn"
+          label={l`Decline`}
+          size="small"
+          color="secondary"
+          variant="outline"
+          disabled={accepting}
+          style={[a.ml_sm]}
+          onPress={() => void decline()}>
+          <ButtonText>
+            <Trans>Decline</Trans>
+          </ButtonText>
+        </Button>
       </View>
     </View>
   )
@@ -238,7 +290,7 @@ function GameRow({game}: {game: Games['games'][number]}) {
       : e.kind === 'agreed'
         ? l`agreed — a block was made`
         : e.kind === 'refused'
-          ? l`the close did not take — an answer is still owed`
+          ? l`the close did not take — ${e.why}`
           : e.kind === 'parted'
             ? l`you parted here`
             : e.kind === 'unfinished'

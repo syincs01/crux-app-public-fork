@@ -110,6 +110,8 @@ export type GameClaim = {
   text: string
   by: string
   postUri: string
+  /** That post's cid from the record's own posts; the stake's pseudo-post is on no AppView. */
+  postCid?: string
   standing: string
   word: string
   tone: 'holds' | 'fallen' | 'open' | 'quiet'
@@ -132,7 +134,7 @@ export type Ending =
   | {kind: 'parted'; at: string}
   | {kind: 'unfinished'; by: string; at: string}
   /** The close was accepted and did not take: an answer is still owed. */
-  | {kind: 'refused'; by: string; at: string}
+  | {kind: 'refused'; by: string; at: string; why: string}
 
 export type GameView = Room & {
   game: {
@@ -153,7 +155,14 @@ export type GameView = Room & {
     publicNotice: string
     owed: Owed[]
     toMove: string | null
-    stores: Record<string, {asserted: GameClaim[]; letStand: GameClaim[]}>
+    stores: Record<
+      string,
+      {asserted: GameClaim[]; letStand: GameClaim[]; doubts: GameClaim[]}
+    >
+    /** The claim the game is at is one its holder only doubts — nobody defends it yet. */
+    claimDoubted: boolean
+    /** The claim a reply is at by default: what the other player just addressed. */
+    replyAt: string | null
     block: GameClaim[]
     canHold: GameClaim[]
     previews: {claimId: string; falls: {id: string; text: string}[]}[]
@@ -163,6 +172,13 @@ export type GameView = Room & {
 }
 
 export type Games = {
+  /** Invitations this person sent that are waiting on the other. */
+  sent: {
+    uri: string
+    to: string
+    subject: {uri: string; text: string}
+    at: string
+  }[]
   invites: {
     uri: string
     from: string

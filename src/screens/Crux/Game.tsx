@@ -26,7 +26,7 @@ export function EndingInWords({ending: e}: {ending: Ending}) {
       </InlineLinkText>
     </Trans>
   ) : e.kind === 'refused' ? (
-    <Trans>The close did not take — an answer is still owed</Trans>
+    <Trans>The close did not take — {e.why}</Trans>
   ) : e.kind === 'parted' ? (
     <Trans>You parted here</Trans>
   ) : e.kind === 'unfinished' ? (
@@ -72,7 +72,11 @@ export function GameScreen({
       // the top of the burden (foundations §11.1) — unless the desk points it
       // elsewhere. Only-when-exactly-one left a player owing two with every
       // answer landing on the last message's claim instead (7 Sept 2026).
-      aboutForMe={owedByMe[0]?.claimId}
+      // What the other player just addressed, else the viewer's newest debt:
+      // a reply answers what was just said. The viewer's own debt as the
+      // target told the model a grant of the other's claim was at the viewer's
+      // own claim (8 September 2026).
+      aboutForMe={game.data?.game.replyAt ?? owedByMe.at(-1)?.claimId}
       extraAboveComposer={
         game.data ? (
           <WhoseMove

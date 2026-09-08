@@ -4,6 +4,7 @@ import {plural} from '@lingui/core/macro'
 import {Trans, useLingui} from '@lingui/react/macro'
 import {useNavigation, useNavigationState} from '@react-navigation/native'
 
+import {useGames} from '#/lib/crux'
 import {useAccountSwitcher} from '#/lib/hooks/useAccountSwitcher'
 import {useOpenComposer} from '#/lib/hooks/useOpenComposer'
 import {getCurrentRoute, isTab} from '#/lib/routes/helpers'
@@ -618,6 +619,9 @@ export function DesktopLeftNav({routeName}: {routeName: string}) {
   const {leftNavMinimal: leftNavMinimalBreakpoint, centerColumnOffset} =
     useLayoutBreakpoints()
   const numUnreadNotifications = useUnreadNotifications()
+  // A9 rule 6: the person invited is told — the platform never notifies on a custom record.
+  const gamesWaiting =
+    useGames(currentAccount?.handle).data?.invites.length ?? 0
   const numUnreadMessages = useUnreadMessageCount()
 
   const leftNavMinimal = isMessagesRelatedScreen || leftNavMinimalBreakpoint
@@ -744,6 +748,7 @@ export function DesktopLeftNav({routeName}: {routeName: string}) {
             label={l`Games`}
             href="/games"
             navItem="games"
+            count={gamesWaiting ? String(gamesWaiting) : undefined}
             minimal={leftNavMinimal}
             icons={{
               inactive: GameControllerIcon,
